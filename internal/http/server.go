@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"fmt"
+
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.uber.org/fx"

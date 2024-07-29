@@ -12,7 +12,7 @@ import (
 
 var Logger *tinylog.TinyLogger
 
-func New(config config.Config) (*tinylog.TinyLogger, error) {
+func New(config config.Config) {
 	c := config.Log
 	preCheck(c.LogLevel)
 
@@ -20,7 +20,6 @@ func New(config config.Config) (*tinylog.TinyLogger, error) {
 	if c.MaxSizeMb > 0 {
 		Logger.SetFileConfig(c.FileName, c.MaxSizeMb, c.MaxBackupCount, c.MaxKeepDays)
 	}
-	return Logger, nil
 }
 
 func preCheck(logLevel uint) {

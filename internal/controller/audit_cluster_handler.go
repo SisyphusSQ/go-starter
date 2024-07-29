@@ -39,12 +39,12 @@ func InitAuditClusterController(e *echo.Echo, clusterService service.AuditCluste
 func (a *AuditClusterController) GetByID(c echo.Context) error {
 	idParam, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return c.JSON(utils.GetStatusCode(err), resp.ResponseError{Message: err.Error()})
+		return c.JSON(utils.GetStatusCode(err), resp.ErrorResp(err))
 	}
 	id := int64(idParam)
 	ac, err := a.AuditClusterService.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(utils.GetStatusCode(err), resp.ResponseError{Message: err.Error()})
+		return c.JSON(utils.GetStatusCode(err), resp.ErrorResp(err))
 	}
-	return c.JSON(http.StatusOK, resp.SimpleResponse{Data: ac, Message: "success"})
+	return c.JSON(http.StatusOK, resp.SuccessResp(ac))
 }

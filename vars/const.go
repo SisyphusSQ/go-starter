@@ -8,7 +8,7 @@ const (
 	FATAL
 )
 
-const (
+var (
 	AccessKey = ""
 	SecretKey = ""
 )

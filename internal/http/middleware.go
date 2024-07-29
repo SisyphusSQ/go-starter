@@ -2,14 +2,15 @@ package http
 
 import (
 	"errors"
-	"go-starter/internal/lib/log"
-	"go-starter/vars"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
+	"go-starter/internal/lib/log"
 	"go-starter/internal/models/resp"
+	"go-starter/vars"
 )
 
 type EchoMiddleware struct {
@@ -24,8 +25,8 @@ func (e *EchoMiddleware) CORS(h echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (e *EchoMiddleware) Recover(h echo.HandlerFunc) echo.HandlerFunc {
-	recover := middleware.Recover()
-	return recover(h)
+	r := middleware.Recover()
+	return r(h)
 }
 
 func (e *EchoMiddleware) Logger(h echo.HandlerFunc) echo.HandlerFunc {
@@ -33,7 +34,7 @@ func (e *EchoMiddleware) Logger(h echo.HandlerFunc) echo.HandlerFunc {
 		if strings.Contains(c.Request().RequestURI, "swagger") {
 			return h(c)
 		}
-		log.Logger.Info("Enter method: %s, uri: %s, userAgent: %s", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent())
+		log.Logger.Info("Enter method: [%s], uri: [%s], userAgent: [%s]", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent())
 		return h(c)
 	}
 }
@@ -48,7 +49,7 @@ func (e *EchoMiddleware) JWT(hf echo.HandlerFunc) echo.HandlerFunc {
 		jwtStr := c.Request().Header.Get("Authorization")
 		auths := strings.Split(jwtStr, " ")
 		if strings.ToUpper(auths[0]) != "BEARER" || auths[1] == "" {
-			return c.JSON(http.StatusUnauthorized, resp.ResponseError{Message: "认证失败"})
+			return c.JSON(http.StatusUnauthorized, resp.AssertErrResp("认证失败"))
 		}
 		// todo check jwt token
 		// todo set jwt info in echo context
@@ -68,7 +69,7 @@ func (e *EchoMiddleware) AccessAuth(hf echo.HandlerFunc) echo.HandlerFunc {
 		accessKey := c.Request().Header.Get("access_key")
 		secretKey := c.Request().Header.Get("secret_key")
 		if accessKey != vars.AccessKey && secretKey != vars.SecretKey {
-			return c.JSON(http.StatusUnauthorized, resp.ResponseError{Message: "认证失败"})
+			return c.JSON(http.StatusUnauthorized, resp.AssertErrResp("认证失败"))
 		}
 
 		return hf(c)
@@ -81,7 +82,7 @@ func (e *EchoMiddleware) ErrorHandler(err error, c echo.Context) {
 	if !ok {
 		report = echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	log.Logger.Info("Leave method: %s, uri: %s, userAgent: %s, got err: %v", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent(), report.Message)
+	log.Logger.Info("Leave method: [%s], uri: [%s], userAgent: [%s], got err: %v", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent(), report.Message)
 	c.Echo().DefaultHTTPErrorHandler(err, c)
 }
 

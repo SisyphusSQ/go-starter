@@ -19,8 +19,5 @@ func InitIndexController(e *echo.Echo) {
 }
 
 func (index *IndexController) Health(c echo.Context) error {
-	return c.JSON(http.StatusOK, resp.SimpleResponse{
-		Message: "success",
-		Data:    timeutil.CSTLayoutString(),
-	})
+	return c.JSON(http.StatusOK, resp.SuccessResp(timeutil.CSTLayoutString()))
 }

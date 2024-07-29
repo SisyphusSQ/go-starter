@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go-starter/config"
+	"go-starter/internal/lib/log"
 	"strings"
 	"time"
 
@@ -87,11 +88,15 @@ func (db *Engine) SetLogLevel(level LogLevel) {
 }
 
 func (db *Engine) wrapLog() {
+	if log.Logger == nil {
+		return
+	}
+
 	newLogger := logger.New(
-		Writer{},
+		log.Logger,
 		logger.Config{
 			SlowThreshold:             200 * time.Millisecond, // Slow SQL threshold
-			LogLevel:                  logger.Silent,          // Log level
+			LogLevel:                  logger.Info,            // Log level
 			IgnoreRecordNotFoundError: true,                   // Ignore ErrRecordNotFound error for logger
 			Colorful:                  false,                  // Disable color
 		},

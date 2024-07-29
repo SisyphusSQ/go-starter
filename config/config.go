@@ -19,6 +19,8 @@ type (
 		Server         Server   `mapstructure:"server"`
 		Database       Database `mapstructure:"database"`
 		Log            Log      `mapstructure:"log"`
+		Key            Key      `mapstructure:"key"`
+		Cron           Cron     `mapstructure:"cron"`
 	}
 
 	Server struct {
@@ -46,6 +48,15 @@ type (
 		MaxSizeMb      int    `toml:"maxSizeMB"`
 		MaxBackupCount int    `toml:"maxBackupCount"`
 		MaxKeepDays    int    `toml:"maxKeepDays"`
+	}
+
+	Key struct {
+		AccessKey string `mapstructure:"accessKey"`
+		SecretKey string `mapstructure:"secretKey"`
+	}
+
+	Cron struct {
+		On bool `mapstructure:"on"`
 	}
 )
 

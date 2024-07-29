@@ -6,19 +6,27 @@ server:
   address: ":8080"
 
 database:
-  driver: "mysql"
-  host: "127.0.0.1"
+  driver: mysql
+  host: 127.0.0.1
   port: 3306
   database: test
-  username: "root"
+  username: root
   password: "root"
   maxIdleConns: 20
   maxLeftTime: 40
   name: "db_test"
 
 log:
-  fileName: test_log.log
+  fileName: logs/audit_sql.log
+  # 0,1,2,3,4 -> debug,info,warn,error,fatal
   logLevel: 1
   maxSizeMB: 20
   maxBackupCount: 200
   maxKeepDays: 7
+
+key:
+  accessKey: ""
+  secretKey: ""
+
+cron:
+  on: true
