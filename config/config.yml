@@ -7,13 +7,18 @@ server:
 
 database:
   driver: "mysql"
-  host: "mysql_test"
+  host: "127.0.0.1"
   port: 3306
-  username: "gostarter"
-  password: "gostarter"
+  database: test
+  username: "root"
+  password: "root"
+  maxIdleConns: 20
+  maxLeftTime: 40
   name: "db_test"
 
-nsq:
-  host: "nsqd"
-  port: 4150
-...
+log:
+  fileName: test_log.log
+  logLevel: 1
+  maxSizeMB: 20
+  maxBackupCount: 200
+  maxKeepDays: 7

@@ -1,12 +1,15 @@
 package http
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/sirupsen/logrus"
-	"go-starter/internal/controller"
+	"errors"
+	"go-starter/internal/lib/log"
+	"go-starter/vars"
 	"net/http"
 	"strings"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"go-starter/internal/models/resp"
 )
 
 type EchoMiddleware struct {
@@ -30,7 +33,7 @@ func (e *EchoMiddleware) Logger(h echo.HandlerFunc) echo.HandlerFunc {
 		if strings.Contains(c.Request().RequestURI, "swagger") {
 			return h(c)
 		}
-		logEntry(c).Info()
+		log.Logger.Info("Enter method: %s, uri: %s, userAgent: %s", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent())
 		return h(c)
 	}
 }
@@ -38,15 +41,14 @@ func (e *EchoMiddleware) Logger(h echo.HandlerFunc) echo.HandlerFunc {
 func (e *EchoMiddleware) JWT(hf echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uri := c.Request().RequestURI
-		if strings.Compare(uri, "/") == 0 ||
-			strings.Compare(uri, "/health") == 0 ||
-			strings.Contains(uri, "swagger") {
+		if strings.Compare(uri, "/") == 0 || strings.Compare(uri, "/health") == 0 ||
+			strings.Contains(uri, "/swagger") {
 			return hf(c)
 		}
 		jwtStr := c.Request().Header.Get("Authorization")
 		auths := strings.Split(jwtStr, " ")
 		if strings.ToUpper(auths[0]) != "BEARER" || auths[1] == "" {
-			return c.JSON(http.StatusUnauthorized, controller.ResponseError{Message: "认证失败"})
+			return c.JSON(http.StatusUnauthorized, resp.ResponseError{Message: "认证失败"})
 		}
 		// todo check jwt token
 		// todo set jwt info in echo context
@@ -54,23 +56,32 @@ func (e *EchoMiddleware) JWT(hf echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func logEntry(c echo.Context) *logrus.Entry {
-	if c == nil {
-		return logrus.WithFields(logrus.Fields{})
+func (e *EchoMiddleware) AccessAuth(hf echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		uri := c.Request().RequestURI
+		if strings.Compare(uri, "/") == 0 || strings.Compare(uri, "/health") == 0 ||
+			strings.Contains(uri, "swagger") {
+			log.Logger.Debug("Directly enter to controller")
+			return hf(c)
+		}
+
+		accessKey := c.Request().Header.Get("access_key")
+		secretKey := c.Request().Header.Get("secret_key")
+		if accessKey != vars.AccessKey && secretKey != vars.SecretKey {
+			return c.JSON(http.StatusUnauthorized, resp.ResponseError{Message: "认证失败"})
+		}
+
+		return hf(c)
 	}
-	return logrus.WithFields(logrus.Fields{
-		"method":    c.Request().Method,
-		"uri":       c.Request().URL.String(),
-		"userAgent": c.Request().UserAgent(),
-	})
 }
 
 func (e *EchoMiddleware) ErrorHandler(err error, c echo.Context) {
-	report, ok := err.(*echo.HTTPError)
+	var report *echo.HTTPError
+	ok := errors.As(err, &report)
 	if !ok {
 		report = echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	logEntry(c).Error(report.Message)
+	log.Logger.Info("Leave method: %s, uri: %s, userAgent: %s, got err: %v", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent(), report.Message)
 	c.Echo().DefaultHTTPErrorHandler(err, c)
 }
 

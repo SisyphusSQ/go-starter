@@ -1,9 +1,12 @@
 package controller
 
 import (
-	"github.com/labstack/echo/v4"
 	"net/http"
-	"time"
+
+	"github.com/labstack/echo/v4"
+
+	"go-starter/internal/models/resp"
+	"go-starter/utils/timeutil"
 )
 
 type IndexController struct {
@@ -16,8 +19,8 @@ func InitIndexController(e *echo.Echo) {
 }
 
 func (index *IndexController) Health(c echo.Context) error {
-	return c.JSON(http.StatusOK, SimpleResponse{
+	return c.JSON(http.StatusOK, resp.SimpleResponse{
 		Message: "success",
-		Data:    time.Now().Format("2006-01-02 15:04:05"),
+		Data:    timeutil.CSTLayoutString(),
 	})
 }

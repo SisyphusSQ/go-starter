@@ -2,24 +2,24 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	echoSwagger "github.com/swaggo/echo-swagger"
-	"go-starter/config"
 	"go.uber.org/fx"
+
+	"go-starter/config"
 )
 
 var Module = fx.Provide(NewServer)
 
 func NewServer(lifecycle fx.Lifecycle, config config.Config) *echo.Echo {
-	logrus.SetLevel(logrus.DebugLevel)
 	instance := echo.New()
 	middleware := InitMiddleware()
 
 	instance.Use(middleware.CORS)
 	instance.Use(middleware.Logger)
 	instance.Use(middleware.Recover)
-	instance.Use(middleware.JWT)
+	instance.Use(middleware.AccessAuth)
 
 	instance.HTTPErrorHandler = middleware.ErrorHandler
 
@@ -27,17 +27,17 @@ func NewServer(lifecycle fx.Lifecycle, config config.Config) *echo.Echo {
 
 	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			logrus.Print("Start Http Server.")
+			fmt.Println("Start Http Server.")
 			go func() {
 				err := instance.Start(config.Server.Address)
 				if err != nil {
-					logrus.Fatal(err)
+					_ = fmt.Errorf("start Http Server error: %v", err)
 				}
 			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			logrus.Print("Stopping Http Server.")
+			fmt.Println("Stopping Http Server.")
 			return instance.Shutdown(ctx)
 		},
 	})
