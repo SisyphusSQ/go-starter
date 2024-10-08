@@ -2,19 +2,21 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"go-starter/vars"
 	"go.uber.org/fx"
 
 	"go-starter/config"
 	"go-starter/internal/controller"
-	"go-starter/internal/cron"
+	_ "go-starter/internal/cron"
 	"go-starter/internal/http"
 	libs "go-starter/internal/lib"
 	"go-starter/internal/lib/log"
 	"go-starter/internal/repository"
 	"go-starter/internal/service"
 	"go-starter/utils"
+	"go-starter/vars"
 )
+
+var configuare string
 
 var (
 	httpCmd = &cobra.Command{
@@ -25,12 +27,11 @@ var (
 )
 
 func initHTTP(cmd *cobra.Command, args []string) {
+	config.SetConfigFile(configuare)
+	config.InitConfig()
 	c := config.NewConfig()
 	log.New(c)
-
-	if c.Cron.On {
-		cron.New()
-	}
+	defer log.Logger.Sync()
 
 	if c.Key.SecretKey != "" {
 		vars.SecretKey = c.Key.SecretKey
@@ -52,6 +53,7 @@ func inject() fx.Option {
 		libs.GlobalModule,
 		repository.Module,
 		service.Module,
+		//cron.Module,
 		controller.Module,
 		http.Module,
 	)

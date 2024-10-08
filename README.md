@@ -7,15 +7,6 @@
 [![Stargazers over time](https://starchart.cc/pinkhello/go-starter.svg)](https://starchart.cc/pinkhello/go-starter)
 
 
-## Demo
-Demo: [房产CRM](http://121.4.242.26) 
-- url: http://121.4.242.26 (test/123456)。
-- BE [go-starter](https://github.com/pinkhello/go-starter)
-- FE [ant-design-vue-pro](https://pro.antdv.com/)
-
-
-
-
 ## thirdparty
 - [X] Github Actions
 - [X] Custom Logger [logrus](https://github.com/sirupsen/logrus)
@@ -27,7 +18,6 @@ Demo: [房产CRM](http://121.4.242.26)
 - [X] Swagger generator [swag](https://github.com/swaggo/swag) [echo-swagger](https://github.com/swaggo/echo-swagger)
 - [X] Messaging [NSQ](https://github.com/nsqio/nsq)
 - [X] golangci-lint [golangci-lint](https://github.com/golangci/golangci-lint)
-- [ ] Migrate [migrate](https://github.com/golang-migrate/migrate)
 - [ ] ......
 
 ## code layer

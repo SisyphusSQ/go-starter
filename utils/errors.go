@@ -2,8 +2,9 @@ package utils
 
 import (
 	"errors"
-	"github.com/sirupsen/logrus"
 	"net/http"
+
+	"go-starter/internal/lib/log"
 )
 
 var (
@@ -17,13 +18,14 @@ func GetStatusCode(err error) int {
 	if err == nil {
 		return http.StatusOK
 	}
-	logrus.Error(err)
-	switch err {
-	case ErrInternalServerError:
+
+	log.Logger.Errorf("get err: %v", err)
+	switch {
+	case errors.Is(err, ErrInternalServerError):
 		return http.StatusInternalServerError
-	case ErrNotFound:
+	case errors.Is(err, ErrNotFound):
 		return http.StatusNotFound
-	case ErrConflict:
+	case errors.Is(err, ErrConflict):
 		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError

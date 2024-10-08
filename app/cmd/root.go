@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"go-starter/config"
 	"os"
 )
 
@@ -21,13 +19,19 @@ var (
 )
 
 func Execute() {
+	initAll()
 	if err := rootCmd.Execute(); err != nil {
-		logrus.Error(err)
+		println(err)
 		os.Exit(1)
 	}
 }
 
-func init() {
-	cobra.OnInitialize(config.InitConfig)
+func initAll() {
+	httpCmd.Flags().StringVarP(&configuare, "config", "c", "./config/config.yml", "config file path")
+	//fmt.Println(configuare)
+	//config.SetConfigFile(configuare)
+	//cobra.OnInitialize(config.InitConfig)
+
 	rootCmd.AddCommand(httpCmd)
+	rootCmd.AddCommand(versionCmd)
 }

@@ -16,6 +16,8 @@ func TestHttp(t *testing.T) {
 	fmt.Println(os.Getwd())
 	config.SetConfigFile("../../config/config.yml")
 
+	configuare = "../../config/config.yml"
+
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("cmd.Execute() failed: %v", err)
 	}

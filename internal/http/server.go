@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	prom "github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.uber.org/fx"
@@ -21,10 +22,12 @@ func NewServer(lifecycle fx.Lifecycle, config config.Config) *echo.Echo {
 	instance.Use(middleware.Logger)
 	instance.Use(middleware.Recover)
 	instance.Use(middleware.AccessAuth)
+	instance.Use(prom.NewMiddleware("audit_admin"))
 
 	instance.HTTPErrorHandler = middleware.ErrorHandler
 
 	instance.GET("/swagger/*", echoSwagger.WrapHandler)
+	instance.GET("/metrics", prom.NewHandler())
 
 	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {

@@ -1,6 +1,11 @@
 package resp
 
-import "go-starter/vars"
+import (
+	"github.com/labstack/echo/v4"
+	"go-starter/utils"
+	"go-starter/vars"
+	"net/http"
+)
 
 type Resp struct {
 	Code    int    `json:"code"`
@@ -47,4 +52,12 @@ type ResponseError struct {
 type SimpleResponse struct {
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
+}
+
+func CommErrResp(c echo.Context, err error) error {
+	return c.JSON(utils.GetStatusCode(err), ErrorResp(err))
+}
+
+func CommSuccResp(c echo.Context, data any) error {
+	return c.JSON(http.StatusOK, SuccessResp(data))
 }

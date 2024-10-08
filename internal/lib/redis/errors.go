@@ -1,6 +1,6 @@
 package redis
 
-import "github.com/go-redis/redis/v8"
+import "github.com/redis/go-redis/v9"
 
 var (
 	// Nil record not found error

@@ -13,3 +13,10 @@ type AuditCluster struct {
 func (AuditCluster) TableName() string {
 	return "audit_cluster"
 }
+
+type InspectionStatus int8
+
+const (
+	Unused InspectionStatus = iota
+	Used
+)
