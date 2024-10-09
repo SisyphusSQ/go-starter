@@ -54,8 +54,15 @@ type (
 	}
 
 	Key struct {
+		Type string `mapstructure:"type"`
+
+		// ak & sk
 		AccessKey string `mapstructure:"accessKey"`
 		SecretKey string `mapstructure:"secretKey"`
+
+		// basic auth
+		User     string `mapstructure:"user"`
+		Password string `mapstructure:"password"`
 	}
 
 	Cron struct {

@@ -11,4 +11,6 @@ const (
 var (
 	AccessKey = ""
 	SecretKey = ""
+	User      = ""
+	Password  = ""
 )

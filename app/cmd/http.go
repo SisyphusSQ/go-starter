@@ -33,12 +33,23 @@ func initHTTP(cmd *cobra.Command, args []string) {
 	log.New(c)
 	defer log.Logger.Sync()
 
-	if c.Key.SecretKey != "" {
-		vars.SecretKey = c.Key.SecretKey
-	}
-
-	if c.Key.AccessKey != "" {
-		vars.AccessKey = c.Key.AccessKey
+	switch c.Key.Type {
+	case "basic":
+		if c.Key.User != "" && c.Key.Password != "" {
+			vars.User = c.Key.User
+			vars.Password = c.Key.Password
+		} else {
+			panic("basic auth required")
+		}
+	case "key":
+		if c.Key.SecretKey != "" && c.Key.AccessKey != "" {
+			vars.SecretKey = c.Key.SecretKey
+			vars.AccessKey = c.Key.AccessKey
+		} else {
+			panic("key auth required")
+		}
+	default:
+		panic("auth required")
 	}
 
 	fx.New(inject()).Run()

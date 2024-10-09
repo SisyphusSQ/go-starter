@@ -48,8 +48,14 @@ log:
   maxKeepDays: 7
 
 key:
+  type: basic
+  # ak & sk
   accessKey: "xxxxx"
   secretKey: "xxxxx"
+
+  # basic auth
+  user: web
+  password: web
 
 cron:
   on: true

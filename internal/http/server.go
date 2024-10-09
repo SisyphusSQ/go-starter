@@ -6,7 +6,9 @@ import (
 
 	prom "github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	mid "github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"go-starter/vars"
 	"go.uber.org/fx"
 
 	"go-starter/config"
@@ -21,8 +23,20 @@ func NewServer(lifecycle fx.Lifecycle, config config.Config) *echo.Echo {
 	instance.Use(middleware.CORS)
 	instance.Use(middleware.Logger)
 	instance.Use(middleware.Recover)
-	instance.Use(middleware.AccessAuth)
-	instance.Use(prom.NewMiddleware("audit_admin"))
+	instance.Use(prom.NewMiddleware("go_starter"))
+
+	switch config.Key.Type {
+	case "basic":
+		instance.Use(mid.BasicAuth(func(user string, password string, c echo.Context) (bool, error) {
+			if user == vars.User && password == vars.Password {
+				return true, nil
+			}
+
+			return false, nil
+		}))
+	case "key":
+		instance.Use(middleware.AccessAuth)
+	}
 
 	instance.HTTPErrorHandler = middleware.ErrorHandler
 
