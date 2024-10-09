@@ -6,6 +6,7 @@ import (
 
 	"go-starter/config"
 	"go-starter/internal/controller"
+	"go-starter/internal/cron"
 	_ "go-starter/internal/cron"
 	"go-starter/internal/http"
 	libs "go-starter/internal/lib"
@@ -64,7 +65,7 @@ func inject() fx.Option {
 		libs.GlobalModule,
 		repository.Module,
 		service.Module,
-		//cron.Module,
+		cron.Module,
 		controller.Module,
 		http.Module,
 	)

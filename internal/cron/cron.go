@@ -42,17 +42,6 @@ type Service interface {
 	IP() string
 }
 
-func New() {
-	log.Logger.Info("starting cron...")
-
-	timezone, _ := time.LoadLocation("Asia/Shanghai")
-	Cron := cron.New(cron.WithSeconds(), cron.WithLocation(timezone))
-
-	Cron.AddFunc("0 0 2 * * ?", cronSample)
-
-	Cron.Start()
-}
-
 type ServiceImpl struct {
 	ctx      context.Context
 	ip       string
