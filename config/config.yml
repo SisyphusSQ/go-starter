@@ -39,6 +39,18 @@ redis:
     active: 200
     idle: 200
 
+mongodb:
+  uri: "host1,host2,host3:27017"
+  authSource: "admin"
+  user: "mongo"
+  password: "xxx"
+  database: "test"
+  maxPoolSize: 20
+  minPoolSize: 10
+  connectTimeoutMS: 100000
+  socketTimeoutMS: 300000
+
+
 log:
   fileName: logs/go_starter.log
   # -1,0,1,2,3,4 -> debug,info,warn,error,dpanic.panic,fatal
@@ -48,6 +60,7 @@ log:
   maxKeepDays: 7
 
 key:
+  # basic or key
   type: basic
   # ak & sk
   accessKey: "xxxxx"

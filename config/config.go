@@ -24,6 +24,7 @@ type (
 		Key            Key      `mapstructure:"key"`
 		Cron           Cron     `mapstructure:"cron"`
 		Redis          Redis    `mapstructure:"redis"`
+		MongoDB        MongoDB  `mapstructure:"mongodb"`
 	}
 
 	Server struct {
@@ -96,6 +97,20 @@ type (
 		// If WaitTimeout is not set, then Wait effects.
 		// if Wait is set true, then wait until ctx timeout, or default false and return directly.
 		Wait bool `yaml:"wait" mapstructure:"wait"`
+	}
+
+	MongoDB struct {
+		URI        string `yaml:"uri" mapstructure:"uri"`
+		AuthSource string `yaml:"authSource" mapstructure:"authSource"`
+		User       string `yaml:"user" mapstructure:"user"`
+		Password   string `yaml:"password" mapstructure:"password"`
+		Database   string `yaml:"database" mapstructure:"database"`
+
+		MaxPoolSize uint64 `yaml:"maxPoolSize" mapstructure:"maxPoolSize"`
+		MinPoolSize uint64 `yaml:"minPoolSize" mapstructure:"minPoolSize"`
+
+		ConnectTimeoutMS int64 `yaml:"connectTimeoutMS" mapstructure:"connectTimeoutMS"`
+		SocketTimeoutMS  int64 `yaml:"socketTimeoutMS" mapstructure:"socketTimeoutMS"`
 	}
 )
 

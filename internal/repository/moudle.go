@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"go-starter/internal/repository/mysql"
 	"go.uber.org/fx"
+
+	"go-starter/internal/repository/mysql"
 )
 
 var Module = fx.Provide(

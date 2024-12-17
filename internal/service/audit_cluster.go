@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
-	"go-starter/internal/models/do"
-	"go-starter/internal/repository/mysql"
 	"time"
+
+	do "go-starter/internal/models/do/mysql/audit"
+	"go-starter/internal/repository/mysql"
 )
 
 type (

@@ -8,7 +8,7 @@ import (
 	"go-starter/config"
 )
 
-// New 实例化新的redis v8
+// New 实例化新的redis v9
 func New(config config.Config) *Client {
 	conf := config.Redis
 	rdb := redis.NewClient(&redis.Options{

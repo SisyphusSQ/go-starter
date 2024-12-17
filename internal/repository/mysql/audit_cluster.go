@@ -4,7 +4,7 @@ import (
 	"context"
 
 	gormv2 "go-starter/internal/lib/gorm"
-	"go-starter/internal/models/do"
+	do "go-starter/internal/models/do/mysql/audit"
 )
 
 type AuditClusterRepository interface {
