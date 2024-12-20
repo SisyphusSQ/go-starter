@@ -26,8 +26,8 @@ type mongoTaskListRepo struct {
 	client *qmgo.QmgoClient
 }
 
-func NewTaskListRepository(c config.MongoDB, coll string) TaskListRepository {
-	cli, err := mongodb.New(c, coll)
+func NewTaskListRepository(c config.MongoDB) TaskListRepository {
+	cli, err := mongodb.New(c, task.TaskList{}.Collection())
 	if err != nil {
 		panic(err)
 	}

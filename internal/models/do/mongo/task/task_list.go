@@ -14,3 +14,5 @@ type TaskList struct {
 	DestMongo   string `json:"destMongo" bson:"destMongo"`
 	MetaData    string `json:"metaData" bson:"metaData"`
 }
+
+func (t TaskList) Collection() string { return "task_list" }
