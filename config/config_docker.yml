@@ -1,0 +1,74 @@
+---
+debug: true
+contextTimeout: 600
+
+server:
+  address: ":8080"
+
+database:
+  driver: "mysql"
+  host: "127.0.0.1"
+  port: 3306
+  database: test
+  username: root
+  password: root
+  maxIdleConns: 20
+  maxLeftTime: 40
+  name: "db_test"
+
+clickhouse:
+  driver: "clickhouse"
+  host: 127.0.0.1
+  port: 8027
+  database: ck
+  username: "ck"
+  password: "xxxx"
+  maxIdleConns: 1
+  maxLeftTime: 1
+
+redis:
+  name: "test"
+  proto: "tcp"
+  addr: "127.0.0.1:6379"
+  auth: "root123"
+  db: 0
+  dialTimeout: "10s"
+  readTimeout: "1s"
+  writeTimeout: "1s"
+  pool:
+    active: 200
+    idle: 200
+
+mongodb:
+  uri: "host1,host2,host3:27017"
+  authSource: "admin"
+  user: "mongo"
+  password: "xxx"
+  database: "test"
+  maxPoolSize: 20
+  minPoolSize: 10
+  connectTimeoutMS: 100000
+  socketTimeoutMS: 300000
+
+
+log:
+  fileName: logs/go_starter.log
+  # -1,0,1,2,3,4 -> debug,info,warn,error,dpanic.panic,fatal
+  logLevel: 0
+  maxSizeMB: 20
+  maxBackupCount: 30
+  maxKeepDays: 7
+
+key:
+  # basic or key
+  type: basic
+  # ak & sk
+  accessKey: "xxxxx"
+  secretKey: "xxxxx"
+
+  # basic auth
+  user: web
+  password: web
+
+cron:
+  on: true
