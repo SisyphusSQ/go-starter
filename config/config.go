@@ -25,6 +25,8 @@ type (
 		Cron           Cron     `mapstructure:"cron"`
 		Redis          Redis    `mapstructure:"redis"`
 		MongoDB        MongoDB  `mapstructure:"mongodb"`
+		Prometheus     Http     `mapstructure:"prometheus"`
+		Lark           Lark     `mapstructure:"lark"`
 	}
 
 	Server struct {
@@ -111,6 +113,24 @@ type (
 
 		ConnectTimeoutMS int64 `yaml:"connectTimeoutMS" mapstructure:"connectTimeoutMS"`
 		SocketTimeoutMS  int64 `yaml:"socketTimeoutMS" mapstructure:"socketTimeoutMS"`
+	}
+
+	Http struct {
+		URL   string `yaml:"url" mapstructure:"url"`
+		Token string `yaml:"token" mapstructure:"token"`
+	}
+
+	Etcd struct {
+		Endpoints   []string      `yaml:"endpoints" mapstructure:"endpoints"`
+		Username    string        `yaml:"username" mapstructure:"username"`
+		Password    string        `yaml:"password" mapstructure:"password"`
+		DialTimeout time.Duration `yaml:"dialTimeout" mapstructure:"dialTimeout"`
+		Service     string        `yaml:"service" mapstructure:"service"`
+	}
+
+	Lark struct {
+		AppID     string `yaml:"appID" mapstructure:"appID"`
+		AppSecret string `yaml:"appSecret" mapstructure:"appSecret"`
 	}
 )
 

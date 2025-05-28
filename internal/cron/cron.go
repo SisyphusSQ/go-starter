@@ -5,14 +5,15 @@ import (
 	"errors"
 	"time"
 
+	"github.com/SisyphusSQ/golib/models/do/base_do"
 	"github.com/bsm/redislock"
 	"github.com/robfig/cron/v3"
 
 	"go-starter/config"
 	"go-starter/internal/lib/log"
 	"go-starter/internal/lib/redis"
-	"go-starter/internal/models/do"
-	"go-starter/internal/repository/mysql"
+	"go-starter/internal/repository/mysql/my_common"
+	"go-starter/internal/repository/mysql/my_example"
 	"go-starter/utils"
 )
 
@@ -52,14 +53,14 @@ type ServiceImpl struct {
 	cache  *redis.Client
 	locker *redislock.Client
 
-	clusterRepo mysql.AuditClusterRepository
-	taskRepo    mysql.TaskResultRepository
+	clusterRepo my_example.AuditClusterRepository
+	taskRepo    my_common.TaskResultRepository
 }
 
 func NewCron(config config.Config,
 	cache *redis.Client,
-	clusterRepos mysql.AuditClusterRepository,
-	taskRepo mysql.TaskResultRepository) (Service, error) {
+	clusterRepos my_example.AuditClusterRepository,
+	taskRepo my_common.TaskResultRepository) (Service, error) {
 	if !config.Cron.On {
 		return &ServiceImpl{}, nil
 	}
@@ -100,9 +101,9 @@ func (s *ServiceImpl) IP() string {
 	return s.ip
 }
 
-func (s *ServiceImpl) writeTaskResult(res do.TaskResult) error {
+func (s *ServiceImpl) writeTaskResult(res base_do.TaskResult) error {
 	var err error
-	if res.TaskStatus == do.Processing {
+	if res.TaskStatus == base_do.Processing {
 		err = s.taskRepo.CreateTaskResult(s.ctx, res)
 		if err != nil {
 			log.Logger.Errorf("create task result failed, got err: %v", err)
@@ -117,24 +118,24 @@ func (s *ServiceImpl) writeTaskResult(res do.TaskResult) error {
 	return nil
 }
 
-func (s *ServiceImpl) start(name task) (do.TaskResult, error) {
-	t := do.TaskResult{
+func (s *ServiceImpl) start(name task) (base_do.TaskResult, error) {
+	t := base_do.TaskResult{
 		UUID:       utils.UUID(),
 		TaskName:   string(name),
 		ExecIP:     s.ip,
-		TaskStatus: do.Processing,
+		TaskStatus: base_do.Processing,
 	}
 	errWrite := s.writeTaskResult(t)
 	t.Start = time.Now()
 	return t, errWrite
 }
 
-func (s *ServiceImpl) end(t do.TaskResult, err error) {
+func (s *ServiceImpl) end(t base_do.TaskResult, err error) {
 	if err == nil {
 		if t.ErrMsg != "" {
-			t.TaskStatus = do.Error
+			t.TaskStatus = base_do.Error
 		} else {
-			t.TaskStatus = do.Finish
+			t.TaskStatus = base_do.Finish
 		}
 
 		t.TaskCost = time.Since(t.Start).Milliseconds()

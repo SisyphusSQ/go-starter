@@ -3,10 +3,10 @@ package controller
 import (
 	"net/http"
 
+	"github.com/SisyphusSQ/golib/models/vo/base_vo"
 	"github.com/labstack/echo/v4"
 
 	"go-starter/internal/cron"
-	"go-starter/internal/models/resp"
 	"go-starter/utils/timeutil"
 )
 
@@ -25,9 +25,9 @@ func InitIndexController(e *echo.Echo, cronSrv cron.Service) {
 }
 
 func (i *IndexController) Health(c echo.Context) error {
-	return c.JSON(http.StatusOK, resp.SuccessResp(timeutil.CSTLayoutString()))
+	return c.JSON(http.StatusOK, base_vo.SuccessResp(timeutil.CSTLayoutString()))
 }
 
 func (i *IndexController) Host(c echo.Context) error {
-	return resp.CommSuccResp(c, i.cronSrv.IP())
+	return base_vo.CommSuccResp(c, i.cronSrv.IP())
 }

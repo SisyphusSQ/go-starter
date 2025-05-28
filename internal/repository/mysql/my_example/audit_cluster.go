@@ -1,10 +1,10 @@
-package mysql
+package my_example
 
 import (
 	"context"
 
 	gormv2 "go-starter/internal/lib/gorm"
-	do "go-starter/internal/models/do/mysql/audit"
+	do "go-starter/internal/models/do/mysql/example"
 )
 
 type AuditClusterRepository interface {
