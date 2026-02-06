@@ -1,10 +1,12 @@
 package resp
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
+
 	"go-starter/utils"
 	"go-starter/vars"
-	"net/http"
 )
 
 type Resp struct {

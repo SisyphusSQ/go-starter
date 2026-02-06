@@ -3,8 +3,6 @@ package gormv2
 import (
 	"errors"
 	"fmt"
-	"go-starter/config"
-	"go-starter/internal/lib/log"
 	"strings"
 	"time"
 
@@ -12,6 +10,9 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"go-starter/config"
+	"go-starter/internal/lib/log"
 )
 
 var (

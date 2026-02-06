@@ -2,8 +2,9 @@ package gormv2
 
 import (
 	"fmt"
-	"go-starter/config"
 	"time"
+
+	"go-starter/config"
 )
 
 type GormConfig struct {

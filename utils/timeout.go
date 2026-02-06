@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/spf13/viper"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 func NewTimeoutContext() time.Duration {

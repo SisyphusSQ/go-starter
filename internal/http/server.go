@@ -8,10 +8,10 @@ import (
 	"github.com/labstack/echo/v4"
 	mid "github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
-	"go-starter/vars"
 	"go.uber.org/fx"
 
 	"go-starter/config"
+	"go-starter/vars"
 )
 
 var Module = fx.Provide(NewServer)
