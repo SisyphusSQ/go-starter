@@ -1,7 +1,14 @@
 package service
 
-import "go.uber.org/fx"
+import (
+	"go.uber.org/fx"
+
+	"go-starter/internal/service/common_srv"
+	"go-starter/internal/service/example_srv"
+)
 
 var Module = fx.Provide(
-	NewAuditClusterService,
+	common_srv.NewLarkService,
+	common_srv.NewPrometheusService,
+	example_srv.NewAuditClusterService,
 )

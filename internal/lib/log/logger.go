@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/SisyphusSQ/golib/utils/timeutil"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go-starter/config"
-	"go-starter/utils/timeutil"
 )
 
-var Logger *ZapLogger
+var (
+	Logger     *ZapLogger
+	LarkLogger *LarkZapLogger
+)
 
 func New(config config.Config) {
 	c := config.Log
@@ -44,8 +47,9 @@ func New(config config.Config) {
 	}
 	encoder := zapcore.NewConsoleEncoder(cfg)
 	core := zapcore.NewCore(encoder, writeSyncer, c.LogLevel)
-	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	Logger = NewZapLogger(logger.Sugar())
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)).Sugar()
+	Logger = NewZapLogger(logger)
+	LarkLogger = NewLarkZapLogger(logger)
 }
 
 func preCheck(logLevel zapcore.Level) {
@@ -74,6 +78,10 @@ type ZapLogger struct {
 
 func NewZapLogger(logger *zap.SugaredLogger) *ZapLogger {
 	return &ZapLogger{logger: logger}
+}
+
+func (l *ZapLogger) GetLogger() *zap.SugaredLogger {
+	return l.logger
 }
 
 // Printf formats according to a format specifier and writes to the logger.

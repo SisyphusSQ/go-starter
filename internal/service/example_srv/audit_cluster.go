@@ -1,11 +1,11 @@
-package service
+package example_srv
 
 import (
 	"context"
 	"time"
 
-	"go-starter/internal/models/do"
-	"go-starter/internal/repository/mysql"
+	do "go-starter/internal/models/do/mysql/example"
+	"go-starter/internal/repository/mysql/my_example"
 )
 
 type (
@@ -14,12 +14,12 @@ type (
 	}
 
 	AuditClusterServiceImpl struct {
-		repo           mysql.AuditClusterRepository
+		repo           my_example.AuditClusterRepository
 		contextTimeout time.Duration
 	}
 )
 
-func NewAuditClusterService(auditClusterRepo mysql.AuditClusterRepository, timeout time.Duration) AuditClusterService {
+func NewAuditClusterService(auditClusterRepo my_example.AuditClusterRepository, timeout time.Duration) AuditClusterService {
 	if auditClusterRepo == nil {
 		panic("AuditClusterRepository is nil")
 	}

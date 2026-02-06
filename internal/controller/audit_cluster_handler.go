@@ -3,17 +3,17 @@ package controller
 import (
 	"strconv"
 
+	"github.com/SisyphusSQ/golib/models/vo/base_vo"
 	"github.com/labstack/echo/v4"
 
-	"go-starter/internal/models/resp"
-	"go-starter/internal/service"
+	"go-starter/internal/service/example_srv"
 )
 
 type AuditClusterController struct {
-	AuditClusterService service.AuditClusterService
+	AuditClusterService example_srv.AuditClusterService
 }
 
-func InitAuditClusterController(e *echo.Echo, clusterService service.AuditClusterService) {
+func InitAuditClusterController(e *echo.Echo, clusterService example_srv.AuditClusterService) {
 	controller := &AuditClusterController{
 		AuditClusterService: clusterService,
 	}
@@ -25,12 +25,12 @@ func InitAuditClusterController(e *echo.Echo, clusterService service.AuditCluste
 func (a *AuditClusterController) GetByID(c echo.Context) error {
 	idParam, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return resp.CommErrResp(c, err)
+		return base_vo.CommErrResp(c, err)
 	}
 	id := int64(idParam)
 	data, err := a.AuditClusterService.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return resp.CommErrResp(c, err)
+		return base_vo.CommErrResp(c, err)
 	}
-	return resp.CommSuccResp(c, data)
+	return base_vo.CommSuccResp(c, data)
 }

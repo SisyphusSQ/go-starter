@@ -1,4 +1,4 @@
-package do
+package example
 
 import "time"
 
