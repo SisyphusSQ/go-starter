@@ -10,5 +10,6 @@ import (
 var Module = fx.Provide(
 	common_srv.NewLarkService,
 	common_srv.NewPrometheusService,
-	example_srv.NewAuditClusterService,
+	example_srv.NewUserService,
+	example_srv.NewUserMongoService,
 )

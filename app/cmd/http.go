@@ -7,7 +7,6 @@ import (
 	"go-starter/config"
 	"go-starter/internal/controller"
 	"go-starter/internal/cron"
-	_ "go-starter/internal/cron"
 	"go-starter/internal/http"
 	libs "go-starter/internal/lib"
 	"go-starter/internal/lib/log"
@@ -36,18 +35,22 @@ func initHTTP(cmd *cobra.Command, args []string) {
 
 	switch c.Key.Type {
 	case "basic":
-		if c.Key.User != "" && c.Key.Password != "" {
-			vars.User = c.Key.User
-			vars.Password = c.Key.Password
+		if c.Key.Basic.User != "" && c.Key.Basic.Password != "" {
+			vars.User = c.Key.Basic.User
+			vars.Password = c.Key.Basic.Password
 		} else {
 			panic("basic auth required")
 		}
 	case "key":
-		if c.Key.SecretKey != "" && c.Key.AccessKey != "" {
-			vars.SecretKey = c.Key.SecretKey
-			vars.AccessKey = c.Key.AccessKey
+		if c.Key.AK.SecretKey != "" && c.Key.AK.AccessKey != "" {
+			vars.SecretKey = c.Key.AK.SecretKey
+			vars.AccessKey = c.Key.AK.AccessKey
 		} else {
 			panic("key auth required")
+		}
+	case "jwt":
+		if c.Key.JWT.Secret == "" || c.Key.JWT.Expire <= 0 {
+			panic("jwt config required")
 		}
 	default:
 		panic("auth required")

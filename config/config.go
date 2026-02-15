@@ -19,7 +19,6 @@ type (
 		ContextTimeout int      `mapstructure:"contextTimeout"`
 		Server         Server   `mapstructure:"server"`
 		Database       Database `mapstructure:"database"`
-		Clickhouse     Database `mapstructure:"clickhouse"`
 		Log            Log      `mapstructure:"log"`
 		Key            Key      `mapstructure:"key"`
 		Cron           Cron     `mapstructure:"cron"`
@@ -59,13 +58,25 @@ type (
 	Key struct {
 		Type string `mapstructure:"type"`
 
-		// ak & sk
-		AccessKey string `mapstructure:"accessKey"`
-		SecretKey string `mapstructure:"secretKey"`
+		Basic BasicAuth `mapstructure:"basic"`
+		AK    AKAuth    `mapstructure:"ak"`
+		JWT   JWTConfig `mapstructure:"jwt"`
+	}
 
-		// basic auth
+	BasicAuth struct {
 		User     string `mapstructure:"user"`
 		Password string `mapstructure:"password"`
+	}
+
+	AKAuth struct {
+		AccessKey string `mapstructure:"accessKey"`
+		SecretKey string `mapstructure:"secretKey"`
+	}
+
+	JWTConfig struct {
+		Secret string `mapstructure:"secret"`
+		Expire int    `mapstructure:"expire"`
+		Issuer string `mapstructure:"issuer"`
 	}
 
 	Cron struct {

@@ -73,7 +73,7 @@ func (s *LarkSrvImpl) loop() {
 
 	err := fn()
 	if err != nil {
-		log.Logger.Error("Lark service before loop, got bot url failed, err: %v", err)
+		log.Logger.Errorf("[LarkService.loop] get bot url error: %v", err)
 	}
 
 	tk := time.NewTicker(5 * time.Minute)
@@ -83,7 +83,7 @@ func (s *LarkSrvImpl) loop() {
 		case <-tk.C:
 			err = fn()
 			if err != nil {
-				log.Logger.Error("Lark service in loop, got bot url failed, err: %v", err)
+				log.Logger.Errorf("[LarkService.loop] get bot url error: %v", err)
 			}
 		}
 	}
@@ -95,10 +95,11 @@ func (s *LarkSrvImpl) SetBotUrl(botUrl string) {
 }
 
 func (s *LarkSrvImpl) SendBotMsg(title string, content []lark_dto.Content) error {
+	log.Logger.Debugf("[LarkService.SendBotMsg] title[%s] start", title)
 	msg := lark_dto.NewBotMsg(title, content)
 	rsp, err := s.botCall(msg)
 	if err != nil {
-		log.Logger.Errorf("SendBotMsg err:%v", err)
+		log.Logger.Errorf("[LarkService.SendBotMsg] botCall error: %v", err)
 		return err
 	}
 
@@ -112,21 +113,23 @@ func (s *LarkSrvImpl) SendBotMsg(title string, content []lark_dto.Content) error
 	var resp lark_dto.BotMsgResp
 	err = json.Unmarshal(rsp, &resp)
 	if err != nil {
-		log.Logger.Errorf("SendBotMsg lark.BotMsgResp json.Unmarshal err:%v", err)
+		log.Logger.Errorf("[LarkService.SendBotMsg] json.Unmarshal BotMsgResp error: %v", err)
 		return err
 	}
 
 	if resp.Code != lark_dto.Success {
 		botLog.Status = base_do.Failure
+		log.Logger.Warnf("[LarkService.SendBotMsg] title[%s] resp code[%d] not success", title, resp.Code)
 	}
 
 	if s.logRepo != nil {
 		err = s.logRepo.CreateRecord(context.Background(), botLog)
 		if err != nil {
-			log.Logger.Errorf("SendBotMsg logRepo.CreateRecord err:%v", err)
+			log.Logger.Errorf("[LarkService.SendBotMsg] logRepo.CreateRecord error: %v", err)
 			return err
 		}
 	}
+	log.Logger.Infof("[LarkService.SendBotMsg] title[%s] success", title)
 	return nil
 }
 
@@ -139,7 +142,7 @@ func (s *LarkSrvImpl) botCall(request lark_dto.BotMsg) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Logger.Infof("[LarkService] reqeust body:\n%s", string(reqBody))
+	log.Logger.Debugf("[LarkService.botCall] request body:\n%s", string(reqBody))
 
 	req, err := http.NewRequest("POST", s.botUrl, bytes.NewBuffer(reqBody))
 	if err != nil {
@@ -158,17 +161,18 @@ func (s *LarkSrvImpl) botCall(request lark_dto.BotMsg) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Logger.Infof("[LarkService] raw response body:\n%s", string(respBody))
+	log.Logger.Debugf("[LarkService.botCall] raw response body:\n%s", string(respBody))
 	return respBody, nil
 }
 
 func (s *LarkSrvImpl) SendLarkMsg(ctx context.Context, req lark_dto.LarkMsgReq) (resp lark_dto.LarkMsgResp, err error) {
+	log.Logger.Debugf("[LarkService.SendLarkMsg] contacts[%v] start", req.Contacts)
 	resp.Resp, err = s.sendMsg(ctx, req.Contacts, req.Message)
 	if err != nil {
-		log.Logger.Errorf("[LarkService] SendLarkMsg err: %v", err)
+		log.Logger.Errorf("[LarkService.SendLarkMsg] sendMsg error: %v", err)
 		return
 	}
-
+	log.Logger.Infof("[LarkService.SendLarkMsg] contacts[%v] success", req.Contacts)
 	return
 }
 
@@ -200,7 +204,7 @@ func (s *LarkSrvImpl) sendMsg(ctx context.Context, contacts []string, msg string
 
 		resp, err := s.client.Im.Message.Create(ctx, req)
 		if err != nil {
-			log.Logger.Errorf("[LarkService] sendMsg err: %v", err)
+			log.Logger.Errorf("[LarkService.sendMsg] contact[%s] Create error: %v", c, err)
 			record.Status = base_do.Failure
 			records = append(records, record)
 			continue
@@ -229,7 +233,7 @@ func (s *LarkSrvImpl) sendMsg(ctx context.Context, contacts []string, msg string
 		for _, record := range records {
 			errR := s.logRepo.CreateRecord(context.Background(), record)
 			if errR != nil {
-				log.Logger.Errorf("[LarkService] write records to db err: %v", errR)
+				log.Logger.Errorf("[LarkService.sendMsg] logRepo.CreateRecord error: %v", errR)
 			}
 		}
 	}()

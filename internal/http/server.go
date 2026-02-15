@@ -7,18 +7,18 @@ import (
 	prom "github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	mid "github.com/labstack/echo/v4/middleware"
-	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.uber.org/fx"
 
 	"go-starter/config"
+	redisv9 "go-starter/internal/lib/redis"
 	"go-starter/vars"
 )
 
 var Module = fx.Provide(NewServer)
 
-func NewServer(lifecycle fx.Lifecycle, config config.Config) *echo.Echo {
+func NewServer(lifecycle fx.Lifecycle, config config.Config, cache *redisv9.Client) *echo.Echo {
 	instance := echo.New()
-	middleware := InitMiddleware()
+	middleware := InitMiddleware(config, cache)
 
 	instance.Use(middleware.CORS)
 	instance.Use(middleware.Logger)
@@ -36,11 +36,12 @@ func NewServer(lifecycle fx.Lifecycle, config config.Config) *echo.Echo {
 		}))
 	case "key":
 		instance.Use(middleware.AccessAuth)
+	case "jwt":
+		instance.Use(middleware.JWT)
 	}
 
 	instance.HTTPErrorHandler = middleware.ErrorHandler
 
-	instance.GET("/swagger/*", echoSwagger.WrapHandler)
 	instance.GET("/metrics", prom.NewHandler())
 
 	lifecycle.Append(fx.Hook{
