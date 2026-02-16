@@ -108,7 +108,6 @@ func (s *UserServiceImpl) List(ctx context.Context, page, pageSize int) (resp vo
 
 func (s *UserServiceImpl) Create(ctx context.Context, req vo.CreateUserReq) (user do.User, err error) {
 	log.Logger.Debugf("[UserSrv.Create] email[%s] start", req.Email)
-	start := time.Now()
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		log.Logger.Warnf("[UserSrv.Create] email[%s] invalid param, name/email/password empty", req.Email)
 		return do.User{}, utils.ErrBadParamInput
