@@ -1,3 +1,12 @@
+## v1.0.1(20250216)
+#### optimization:
+1. LarkService 去除对 MySQL 的依赖，移除 logRepo、configRepo 及落库逻辑，lark_service 不再 import mysql 包
+2. repository module 移除 NewLarkMsgLogRepository、NewConfigKVRepository 的 fx.Provide
+
+#### bugFix:
+1. 修复 utils/hash.go 中 hashids.NewWithData 返回值处理，正确接收 (*HashID, error) 避免 multiple-value in single-value context 编译错误
+
+
 ## v1.0.0(20260215)
 #### feature:
 1. 新增用户接口响应体定义 `UserListResp`、`UserMongoListResp`、`UserIDResp`、`UserMongoIDResp`，统一列表与主键返回结构

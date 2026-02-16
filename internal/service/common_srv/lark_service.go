@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/SisyphusSQ/golib/models/do/base_do"
 	"github.com/SisyphusSQ/golib/models/dto/lark_dto"
 	"github.com/SisyphusSQ/golib/utils"
 	lark "github.com/larksuite/oapi-sdk-go/v3"
@@ -17,7 +16,6 @@ import (
 
 	"go-starter/config"
 	"go-starter/internal/lib/log"
-	"go-starter/internal/repository/mysql/my_common"
 )
 
 type LarkService interface {
@@ -35,27 +33,14 @@ type LarkSrvImpl struct {
 	botUrl    string
 	botClient *http.Client
 	client    *lark.Client
-
-	logRepo    my_common.LarkMsgLogRepository
-	configRepo my_common.ConfigKVRepository
 }
 
-func NewLarkService(c config.Config, logRepo my_common.LarkMsgLogRepository, configRepo my_common.ConfigKVRepository) LarkService {
-	if logRepo == nil {
-		panic("logRepo is nil")
-	}
-
-	if configRepo == nil {
-		panic("configKVRepo is nil")
-	}
-
+func NewLarkService(c config.Config) LarkService {
 	s := &LarkSrvImpl{
 		client: lark.NewClient(c.Lark.AppID, c.Lark.AppSecret,
 			lark.WithLogger(log.LarkLogger), lark.WithLogLevel(larkcore.LogLevelDebug)),
 
-		botClient:  http.DefaultClient,
-		logRepo:    logRepo,
-		configRepo: configRepo,
+		botClient: http.DefaultClient,
 	}
 	return s
 }
@@ -103,13 +88,6 @@ func (s *LarkSrvImpl) SendBotMsg(title string, content []lark_dto.Content) error
 		return err
 	}
 
-	req, _ := json.MarshalIndent(msg, "", "    ")
-	botLog := base_do.LarkMsgLog{
-		SendMessage: string(req),
-		Response:    string(rsp),
-		Status:      base_do.Status(lark_dto.Success),
-	}
-
 	var resp lark_dto.BotMsgResp
 	err = json.Unmarshal(rsp, &resp)
 	if err != nil {
@@ -118,16 +96,7 @@ func (s *LarkSrvImpl) SendBotMsg(title string, content []lark_dto.Content) error
 	}
 
 	if resp.Code != lark_dto.Success {
-		botLog.Status = base_do.Failure
 		log.Logger.Warnf("[LarkService.SendBotMsg] title[%s] resp code[%d] not success", title, resp.Code)
-	}
-
-	if s.logRepo != nil {
-		err = s.logRepo.CreateRecord(context.Background(), botLog)
-		if err != nil {
-			log.Logger.Errorf("[LarkService.SendBotMsg] logRepo.CreateRecord error: %v", err)
-			return err
-		}
 	}
 	log.Logger.Infof("[LarkService.SendBotMsg] title[%s] success", title)
 	return nil
@@ -178,65 +147,35 @@ func (s *LarkSrvImpl) SendLarkMsg(ctx context.Context, req lark_dto.LarkMsgReq) 
 
 func (s *LarkSrvImpl) sendMsg(ctx context.Context, contacts []string, msg string) ([]*larkim.CreateMessageResp, error) {
 	var (
-		err     error
-		resps   = make([]*larkim.CreateMessageResp, 0)
-		records = make([]base_do.LarkMsgLog, 0)
+		err   error
+		resps = make([]*larkim.CreateMessageResp, 0)
 	)
 
 	for _, c := range contacts {
-		record := base_do.LarkMsgLog{
-			UUID:        utils.UUID(),
-			SendMessage: msg,
-			Response:    "",
-			Status:      base_do.Success,
-			Contacts:    c,
-		}
-
+		uuid := utils.UUID()
 		req := larkim.NewCreateMessageReqBuilder().
 			ReceiveIdType("email").
 			Body(larkim.NewCreateMessageReqBodyBuilder().
 				ReceiveId(c).
-				Uuid(record.UUID).
+				Uuid(uuid).
 				MsgType("interactive").
-				Content(record.SendMessage).
+				Content(msg).
 				Build()).
 			Build()
 
-		resp, err := s.client.Im.Message.Create(ctx, req)
-		if err != nil {
-			log.Logger.Errorf("[LarkService.sendMsg] contact[%s] Create error: %v", c, err)
-			record.Status = base_do.Failure
-			records = append(records, record)
+		resp, createErr := s.client.Im.Message.Create(ctx, req)
+		if createErr != nil {
+			log.Logger.Errorf("[LarkService.sendMsg] contact[%s] Create error: %v", c, createErr)
+			err = createErr
 			continue
 		}
 
 		if !resp.Success() {
-			record.Status = base_do.Failure
-			record.Response = resp.ErrorResp()
 			err = errors.New(resp.ErrorResp())
-		} else {
-			respStr, e := json.Marshal(resp)
-			if e == nil {
-				record.Response = string(respStr)
-			}
 		}
 
-		if resp.Data != nil {
-			record.MessageID = *resp.Data.MessageId
-		}
-
-		records = append(records, record)
 		resps = append(resps, resp)
 	}
-
-	go func() {
-		for _, record := range records {
-			errR := s.logRepo.CreateRecord(context.Background(), record)
-			if errR != nil {
-				log.Logger.Errorf("[LarkService.sendMsg] logRepo.CreateRecord error: %v", errR)
-			}
-		}
-	}()
 
 	return resps, err
 }
