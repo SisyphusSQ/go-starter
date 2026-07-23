@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/speps/go-hashids"
+import "github.com/speps/go-hashids/v2"
 
 type Hash struct {
 	secret string
