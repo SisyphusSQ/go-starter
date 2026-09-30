@@ -2,45 +2,36 @@ package routine
 
 import (
 	"errors"
-	"fmt"
+	"sync/atomic"
 	"testing"
-	"time"
 )
 
-func TestGO(t *testing.T) {
-	fns := make([]func(), 0, 10)
-	for i := 0; i < 1086; i++ {
-		p := i
-		fn := func() {
-			time.Sleep(100 * time.Millisecond)
-			fmt.Printf("%d\n", p)
-		}
-
-		fns = append(fns, fn)
+func TestGoRunsEveryFunction(t *testing.T) {
+	var calls atomic.Int64
+	fns := make([]func(), 100)
+	for i := range fns {
+		fns[i] = func() { calls.Add(1) }
 	}
-
-	Go(10, fns)
-}
-
-func TestGOE(t *testing.T) {
-	fns := make([]func() error, 0, 10)
-	for i := 0; i < 10086; i++ {
-		fn := func() error {
-			return errors.New("test error")
-		}
-
-		fns = append(fns, fn)
+	if err := Go(8, fns); err != nil {
+		t.Fatalf("Go() error = %v", err)
 	}
-
-	err := GoE(5, fns)
-	if err != nil {
-		t.Logf("err: %v", err)
+	if calls.Load() != int64(len(fns)) {
+		t.Fatalf("calls = %d, want %d", calls.Load(), len(fns))
 	}
 }
 
-func TestFor(t *testing.T) {
-	for i := 0; i < 10086; i++ {
-		time.Sleep(100 * time.Millisecond)
-		fmt.Printf("%d\n", i)
+func TestGoEJoinsErrorsAndRejectsInvalidParallelism(t *testing.T) {
+	errOne := errors.New("one")
+	errTwo := errors.New("two")
+	err := GoE(2, []func() error{
+		func() error { return errOne },
+		func() error { return nil },
+		func() error { return errTwo },
+	})
+	if !errors.Is(err, errOne) || !errors.Is(err, errTwo) {
+		t.Fatalf("GoE() error = %v", err)
+	}
+	if err = GoE(0, nil); err == nil {
+		t.Fatal("GoE() expected invalid parallelism error")
 	}
 }

@@ -2,61 +2,31 @@ package gormv2
 
 import (
 	"fmt"
-	"time"
+	"strings"
 
-	"go-starter/config"
+	"github.com/SisyphusSQ/go-starter/v2/config"
 )
 
-type GormConfig struct {
-	Alias        string        `toml:"alias" json:"alias"`
-	Type         string        `toml:"type" json:"type"`
-	Server       string        `toml:"server" json:"server"`
-	Port         int           `toml:"port" json:"port"`
-	Database     string        `toml:"database" json:"database"`
-	User         string        `toml:"user" json:"user"`
-	Password     string        `toml:"password" json:"password"`
-	MaxIdleConns int           `toml:"maxIdleConns" json:"maxIdleConns"`
-	MaxOpenConns int           `toml:"maxOpenConns" json:"maxOpenConns"`
-	Charset      string        `toml:"charset" json:"charset"`
-	TimeZone     string        `toml:"timezone" json:"timezone"`
-	MaxLeftTime  time.Duration `toml:"maxLeftTime" json:"maxLeftTime"`
-}
+const (
+	defaultCharset  = "utf8mb4"
+	defaultTimeZone = "Local"
+)
 
-func authConfig(conf config.Database) (err error) {
-	if len(conf.Name) == 0 {
-		conf.Name = defaultDatabase
+func normalizeConfig(conf config.Database) (config.Database, error) {
+	if conf.Driver == "" {
+		conf.Driver = "mysql"
 	}
-
-	if conf.Port == 0 {
-		conf.Port = MPort
+	if conf.Driver != "mysql" {
+		return config.Database{}, fmt.Errorf("unsupported database driver %q", conf.Driver)
 	}
-
-	if len(conf.User) == 0 || len(conf.Password) == 0 {
-		err = fmt.Errorf("User or  Password is empty")
-		return
+	if strings.TrimSpace(conf.User) == "" || strings.TrimSpace(conf.Host) == "" || strings.TrimSpace(conf.Database) == "" {
+		return config.Database{}, fmt.Errorf("database username, host and database are required")
 	}
-
-	if len(conf.Host) == 0 {
-		err = fmt.Errorf("server addr is empty")
-		return
+	if conf.Charset == "" {
+		conf.Charset = defaultCharset
 	}
-
-	if len(conf.Database) == 0 {
-		err = fmt.Errorf("database is empty")
-		return
+	if conf.TimeZone == "" {
+		conf.TimeZone = defaultTimeZone
 	}
-
-	if conf.MaxIdleConns == 0 {
-		conf.MaxIdleConns = DefaultMaxIdleConns
-	}
-
-	if conf.MaxLeftTime == 0 {
-		conf.MaxLeftTime = DefaultMaxLeftTime
-	}
-
-	if conf.MaxOpenConns == 0 {
-		conf.MaxOpenConns = DefaultMaxOpenConns
-	}
-
-	return
+	return conf, nil
 }

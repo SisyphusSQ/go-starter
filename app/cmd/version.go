@@ -6,7 +6,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
-	"go-starter/vars"
+	"github.com/SisyphusSQ/go-starter/v2/vars"
 )
 
 var versionCmd = &cobra.Command{

@@ -3,15 +3,15 @@ package utils
 import (
 	"errors"
 	"net/http"
-
-	"go-starter/internal/lib/log"
 )
 
 var (
-	ErrInternalServerError = errors.New("Internal Server Error")
-	ErrNotFound            = errors.New("Not Found")
-	ErrConflict            = errors.New("Your Item already exist")
-	ErrBadParamInput       = errors.New("Param Invalid")
+	ErrUnauthorized        = errors.New("unauthorized")
+	ErrForbidden           = errors.New("forbidden")
+	ErrInternalServerError = errors.New("internal server error")
+	ErrNotFound            = errors.New("not found")
+	ErrConflict            = errors.New("resource already exists")
+	ErrBadParamInput       = errors.New("invalid request parameters")
 )
 
 func GetStatusCode(err error) int {
@@ -19,8 +19,13 @@ func GetStatusCode(err error) int {
 		return http.StatusOK
 	}
 
-	log.Logger.Errorf("get err: %v", err)
 	switch {
+	case errors.Is(err, ErrUnauthorized):
+		return http.StatusUnauthorized
+	case errors.Is(err, ErrForbidden):
+		return http.StatusForbidden
+	case errors.Is(err, ErrBadParamInput):
+		return http.StatusBadRequest
 	case errors.Is(err, ErrInternalServerError):
 		return http.StatusInternalServerError
 	case errors.Is(err, ErrNotFound):

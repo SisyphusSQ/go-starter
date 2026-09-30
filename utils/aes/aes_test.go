@@ -1,25 +1,44 @@
 package aes
 
-import "testing"
-
-const (
-	key = "IgkibX71IEf382PT"
-	iv  = "IgkibX71IEf382PT"
+import (
+	"encoding/base64"
+	"testing"
 )
 
-func TestEncrypt(t *testing.T) {
-	t.Log(New(key, iv).Encrypt("123456"))
+func TestAESGCMRoundTrip(t *testing.T) {
+	cipher, err := New("0123456789abcdef0123456789abcdef")
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	encrypted, err := cipher.Encrypt("sensitive value")
+	if err != nil {
+		t.Fatalf("Encrypt() error = %v", err)
+	}
+	decrypted, err := cipher.Decrypt(encrypted)
+	if err != nil {
+		t.Fatalf("Decrypt() error = %v", err)
+	}
+	if decrypted != "sensitive value" {
+		t.Fatalf("Decrypt() = %q", decrypted)
+	}
 }
 
-func TestDecrypt(t *testing.T) {
-	t.Log(New(key, iv).Decrypt("GO-ri84zevE-z1biJwfQPw=="))
-}
-
-func BenchmarkEncryptAndDecrypt(b *testing.B) {
-	b.ResetTimer()
-	aes := New(key, iv)
-	for i := 0; i < b.N; i++ {
-		encryptString, _ := aes.Encrypt("123456")
-		aes.Decrypt(encryptString)
+func TestAESGCMRejectsTampering(t *testing.T) {
+	cipher, err := New("0123456789abcdef0123456789abcdef")
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	encrypted, err := cipher.Encrypt("sensitive value")
+	if err != nil {
+		t.Fatalf("Encrypt() error = %v", err)
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(encrypted)
+	if err != nil {
+		t.Fatalf("DecodeString() error = %v", err)
+	}
+	raw[len(raw)-1] ^= 1
+	tampered := base64.RawURLEncoding.EncodeToString(raw)
+	if _, err = cipher.Decrypt(tampered); err == nil {
+		t.Fatal("Decrypt() accepted tampered ciphertext")
 	}
 }

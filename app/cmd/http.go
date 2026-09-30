@@ -1,75 +1,87 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 
-	"go-starter/config"
-	"go-starter/internal/controller"
-	"go-starter/internal/cron"
-	"go-starter/internal/http"
-	libs "go-starter/internal/lib"
-	"go-starter/internal/lib/log"
-	"go-starter/internal/repository"
-	"go-starter/internal/service"
-	"go-starter/utils"
-	"go-starter/vars"
+	"github.com/SisyphusSQ/go-starter/v2/config"
+	"github.com/SisyphusSQ/go-starter/v2/internal/controller"
+	"github.com/SisyphusSQ/go-starter/v2/internal/cron"
+	"github.com/SisyphusSQ/go-starter/v2/internal/health"
+	"github.com/SisyphusSQ/go-starter/v2/internal/http"
+	libs "github.com/SisyphusSQ/go-starter/v2/internal/lib"
+	"github.com/SisyphusSQ/go-starter/v2/internal/lib/log"
+	"github.com/SisyphusSQ/go-starter/v2/internal/repository"
+	"github.com/SisyphusSQ/go-starter/v2/internal/service"
+	"github.com/SisyphusSQ/go-starter/v2/utils"
 )
 
-var configuare string
+var configure string
 
 var (
 	httpCmd = &cobra.Command{
 		Use:   "http",
 		Short: "Start Http REST API",
-		Run:   initHTTP,
+		RunE:  initHTTP,
 	}
 )
 
-func initHTTP(cmd *cobra.Command, args []string) {
-	config.SetConfigFile(configuare)
-	config.InitConfig()
-	c := config.NewConfig()
-	log.New(c)
-	defer log.Logger.Sync()
+func initHTTP(cmd *cobra.Command, _ []string) error {
+	c, err := config.Load(configure)
+	if err != nil {
+		return err
+	}
+	if err = log.New(c); err != nil {
+		return err
+	}
+	defer func() { _ = log.Sync() }()
 
-	switch c.Key.Type {
-	case "basic":
-		if c.Key.Basic.User != "" && c.Key.Basic.Password != "" {
-			vars.User = c.Key.Basic.User
-			vars.Password = c.Key.Basic.Password
-		} else {
-			panic("basic auth required")
-		}
-	case "key":
-		if c.Key.AK.SecretKey != "" && c.Key.AK.AccessKey != "" {
-			vars.SecretKey = c.Key.AK.SecretKey
-			vars.AccessKey = c.Key.AK.AccessKey
-		} else {
-			panic("key auth required")
-		}
-	case "jwt":
-		if c.Key.JWT.Secret == "" || c.Key.JWT.Expire <= 0 {
-			panic("jwt config required")
-		}
-	default:
-		panic("auth required")
+	app := fx.New(inject(c))
+	if err = app.Err(); err != nil {
+		return fmt.Errorf("build application graph: %w", err)
 	}
 
-	fx.New(inject()).Run()
+	runCtx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	startCtx, cancelStart := context.WithTimeout(runCtx, c.ContextTimeout)
+	defer cancelStart()
+	if err = app.Start(startCtx); err != nil {
+		return fmt.Errorf("start application: %w", err)
+	}
+	var runtimeErr error
+	select {
+	case <-runCtx.Done():
+	case signal := <-app.Wait():
+		if signal.ExitCode != 0 {
+			runtimeErr = fmt.Errorf("application stopped unexpectedly")
+		}
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), c.Server.ShutdownTimeout)
+	defer cancel()
+	if err = app.Stop(shutdownCtx); err != nil {
+		return fmt.Errorf("stop application: %w", err)
+	}
+	return runtimeErr
 }
 
-func inject() fx.Option {
+func inject(c config.Config) fx.Option {
 	return fx.Options(
-		fx.Provide(
-			config.NewConfig,
-			utils.NewTimeoutContext,
-		),
-		libs.GlobalModule,
+		fx.Supply(c),
+		fx.Provide(utils.NewTimeoutContext),
+		fx.Provide(health.New),
+		libs.Module(c),
 		repository.Module,
-		service.Module,
+		service.Module(c),
 		cron.Module,
-		controller.Module,
+		controller.Module(c),
+		fx.Invoke(func(*http.Server) {}),
 		http.Module,
 	)
 }
