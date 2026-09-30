@@ -1,6 +1,6 @@
 package main
 
-import "go-starter/app/cmd"
+import "github.com/SisyphusSQ/go-starter/v2/app/cmd"
 
 func main() {
 	cmd.Execute()

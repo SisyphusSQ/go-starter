@@ -1,22 +1,26 @@
-FROM golang:1.23.2 AS builder
-MAINTAINER suqing <zz13168@hotmail.com>
+FROM golang:1.27.1-alpine3.24 AS builder
 
-WORKDIR /app
-ENV GO111MODULE=on
-ENV GOPROXY=https://goproxy.cn,direct
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
-RUN make build
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/go-starter ./app/main.go
 
-FROM centos:centos7.9.2009
+FROM alpine:3.24.1
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S app \
+    && adduser -S -G app app \
+    && mkdir -p /app/config /app/logs \
+    && chown -R app:app /app
+
 WORKDIR /app
+COPY --from=builder /out/go-starter /app/go-starter
+COPY --from=builder /src/config/config_docker.yml /app/config/config.yml
 
-ENV TZ Asia/Shanghai
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN mkdir -p /app/config && mkdir -p /qae/log
-
-COPY --from=builder /app/bin/go_starter /app
-COPY --from=builder /app/config/config_docker.yml /app/config/config.yml
-
-RUN chmod +x /app/go_starter
-CMD ["/app/go_starter", "http", "-c", "/app/config/config.yml"]
+USER app
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:8080/health >/dev/null || exit 1
+ENTRYPOINT ["/app/go-starter"]
+CMD ["http", "-c", "/app/config/config.yml"]

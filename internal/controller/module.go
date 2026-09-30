@@ -1,14 +1,12 @@
 package controller
 
 import (
+	"github.com/SisyphusSQ/go-starter/v2/config"
 	"go.uber.org/fx"
-
-	"go-starter/internal/controller/comm_controller"
-	"go-starter/internal/controller/example_controller"
 )
 
-var Module = fx.Invoke(
-	comm_controller.InitIndexController,
-	example_controller.InitUserController,
-	example_controller.InitUserMongoController,
-)
+func Module(cfg config.Config) fx.Option {
+	var options []fx.Option
+
+	return fx.Options(options...)
+}

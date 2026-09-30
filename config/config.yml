@@ -1,66 +1,101 @@
 ---
 debug: true
-contextTimeout: 600
+contextTimeout: 10s
 
 server:
-    address: ":8080"
-
+    metrics: true
+    readinessTimeout: 2s
+    address: "127.0.0.1:8080"
+    readHeaderTimeout: 5s
+    readTimeout: 15s
+    writeTimeout: 15s
+    idleTimeout: 60s
+    shutdownTimeout: 10s
+    maxBodyBytes: 1048576
+    corsOrigins:
+        - "http://localhost:3000"
 database:
+    enabled: false
     driver: "mysql"
     host: "127.0.0.1"
     port: 3306
-    database: test
-    username: root
-    password: root
+    database: "test"
+    username: "root"
+    password: ""
     maxIdleConns: 20
-    maxLeftTime: 40
+    maxOpenConns: 100
+    connMaxLifetime: 5m
+    charset: "utf8mb4"
+    timeZone: "Local"
     name: "db_test"
 
 redis:
+    enabled: false
     name: "test"
     proto: "tcp"
     addr: "127.0.0.1:6379"
-    auth: "root123"
+    auth: ""
     db: 0
-    dialTimeout: "10s"
-    readTimeout: "1s"
-    writeTimeout: "1s"
+    dialTimeout: 5s
+    readTimeout: 1s
+    writeTimeout: 1s
+    slowLog: 200ms
     pool:
-        active: 200
-        idle: 200
+        active: 100
+        idle: 10
+        waitTimeout: 2s
+        wait: true
+
 
 mongodb:
-    uri: "host1,host2,host3:27017"
+    enabled: false
+    uri: "mongodb://127.0.0.1:27017"
     authSource: "admin"
-    user: "mongo"
-    password: "xxx"
+    user: ""
+    password: ""
     database: "test"
     maxPoolSize: 20
-    minPoolSize: 10
-    connectTimeoutMS: 100000
-    socketTimeoutMS: 300000
+    minPoolSize: 2
+    connectTimeout: 5s
+
+prometheus:
+    enabled: false
+    url: "http://127.0.0.1:9090"
+    token: ""
+    timeout: 5s
+
+
+
+
+lark:
+    enabled: false
+    appID: ""
+    appSecret: ""
+    timeout: 10s
+
+
 
 log:
-    fileName: logs/go_starter.log
-    # -1,0,1,2,3,4 -> debug,info,warn,error,dpanic.panic,fatal
+    output: "stdout"
+    fileName: "logs/go-starter.log"
     logLevel: 0
     maxSizeMB: 20
     maxBackupCount: 30
     maxKeepDays: 7
 
 key:
-    # basic or key or jwt
-    type: jwt
+    type: "none"
     basic:
-        user: web
-        password: web
+        user: ""
+        password: ""
     ak:
-        accessKey: "xxxxx"
-        secretKey: "xxxxx"
+        accessKey: ""
+        secretKey: ""
     jwt:
-        secret: "go-starter-jwt-secret-change-me"
-        expire: 7200
+        namespace: "go-starter"
+        secret: ""
+        expire: 2h
         issuer: "go-starter"
 
 cron:
-    on: true
+    on: false

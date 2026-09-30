@@ -5,177 +5,112 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
-	"github.com/SisyphusSQ/golib/models/dto/lark_dto"
-	"github.com/SisyphusSQ/golib/utils"
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 
-	"go-starter/config"
-	"go-starter/internal/lib/log"
+	"github.com/SisyphusSQ/go-starter/v2/config"
+	"github.com/SisyphusSQ/go-starter/v2/internal/lib/log"
+	"github.com/SisyphusSQ/go-starter/v2/internal/models/dto"
+	"github.com/SisyphusSQ/go-starter/v2/utils"
 )
 
 type LarkService interface {
-	SetBotUrl(botUrl string)
-	SendBotMsg(title string, content []lark_dto.Content) error
-
-	SendLarkMsg(ctx context.Context, req lark_dto.LarkMsgReq) (resp lark_dto.LarkMsgResp, err error)
-
-	//loop()
-	botCall(request lark_dto.BotMsg) ([]byte, error)
-	sendMsg(ctx context.Context, contacts []string, msg string) ([]*larkim.CreateMessageResp, error)
+	SetBotURL(botURL string)
+	SendBotMessage(ctx context.Context, title string, content []dto.LarkContent) error
+	SendMessage(ctx context.Context, req dto.LarkMessageRequest) (dto.LarkMessageResponse, error)
 }
 
-type LarkSrvImpl struct {
-	botUrl    string
+type LarkServiceImpl struct {
+	botURL    string
 	botClient *http.Client
 	client    *lark.Client
 }
 
 func NewLarkService(c config.Config) LarkService {
-	s := &LarkSrvImpl{
-		client: lark.NewClient(c.Lark.AppID, c.Lark.AppSecret,
-			lark.WithLogger(log.LarkLogger), lark.WithLogLevel(larkcore.LogLevelDebug)),
-
-		botClient: http.DefaultClient,
-	}
-	return s
-}
-
-/*
-func (s *LarkSrvImpl) loop() {
-	fn := func() error {
-		kv, err := s.configRepo.GetByKey(context.Background(), xxx.BotURL)
-		if err != nil {
-			return err
-		}
-		s.botUrl = kv.V
-		return nil
-	}
-
-	err := fn()
-	if err != nil {
-		log.Logger.Errorf("[LarkService.loop] get bot url error: %v", err)
-	}
-
-	tk := time.NewTicker(5 * time.Minute)
-	defer tk.Stop()
-	for {
-		select {
-		case <-tk.C:
-			err = fn()
-			if err != nil {
-				log.Logger.Errorf("[LarkService.loop] get bot url error: %v", err)
-			}
-		}
+	return &LarkServiceImpl{
+		client: lark.NewClient(
+			c.Lark.AppID,
+			c.Lark.AppSecret,
+			lark.WithLogger(log.LarkLogger),
+			lark.WithLogLevel(larkcore.LogLevelWarn),
+			lark.WithHttpClient(&http.Client{Timeout: c.Lark.Timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}),
+		),
+		botClient: &http.Client{Timeout: c.Lark.Timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }},
 	}
 }
-*/
 
-func (s *LarkSrvImpl) SetBotUrl(botUrl string) {
-	s.botUrl = botUrl
+func (s *LarkServiceImpl) SetBotURL(botURL string) {
+	s.botURL = strings.TrimSpace(botURL)
 }
 
-func (s *LarkSrvImpl) SendBotMsg(title string, content []lark_dto.Content) error {
-	log.Logger.Debugf("[LarkService.SendBotMsg] title[%s] start", title)
-	msg := lark_dto.NewBotMsg(title, content)
-	rsp, err := s.botCall(msg)
+func (s *LarkServiceImpl) SendBotMessage(ctx context.Context, title string, content []dto.LarkContent) error {
+	if s.botURL == "" {
+		return errors.New("lark bot URL is not configured")
+	}
+
+	reqBody, err := json.Marshal(dto.NewBotMessage(title, content))
 	if err != nil {
-		log.Logger.Errorf("[LarkService.SendBotMsg] botCall error: %v", err)
-		return err
+		return fmt.Errorf("marshal lark bot message: %w", err)
 	}
-
-	var resp lark_dto.BotMsgResp
-	err = json.Unmarshal(rsp, &resp)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.botURL, bytes.NewReader(reqBody))
 	if err != nil {
-		log.Logger.Errorf("[LarkService.SendBotMsg] json.Unmarshal BotMsgResp error: %v", err)
-		return err
+		return fmt.Errorf("create lark bot request: %w", err)
 	}
-
-	if resp.Code != lark_dto.Success {
-		log.Logger.Warnf("[LarkService.SendBotMsg] title[%s] resp code[%d] not success", title, resp.Code)
-	}
-	log.Logger.Infof("[LarkService.SendBotMsg] title[%s] success", title)
-	return nil
-}
-
-func (s *LarkSrvImpl) botCall(request lark_dto.BotMsg) ([]byte, error) {
-	if s.botUrl == "" {
-		return []byte{}, errors.New("bot url not be config")
-	}
-
-	reqBody, err := json.MarshalIndent(request, "", "	   ")
-	if err != nil {
-		return nil, err
-	}
-	log.Logger.Debugf("[LarkService.botCall] request body:\n%s", string(reqBody))
-
-	req, err := http.NewRequest("POST", s.botUrl, bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, err
-	}
-
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := s.botClient.Do(req)
 	if err != nil {
-		return nil, err
+		return errors.New("send lark bot request failed")
 	}
 	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("read lark bot response: %w", err)
 	}
-	log.Logger.Debugf("[LarkService.botCall] raw response body:\n%s", string(respBody))
-	return respBody, nil
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("lark bot returned HTTP %d", resp.StatusCode)
+	}
+
+	var result dto.BotMessageResponse
+	if err = json.Unmarshal(body, &result); err != nil {
+		return fmt.Errorf("decode lark bot response: %w", err)
+	}
+	if result.Code != 0 {
+		return fmt.Errorf("lark bot returned code %d: %s", result.Code, result.Msg)
+	}
+	return nil
 }
 
-func (s *LarkSrvImpl) SendLarkMsg(ctx context.Context, req lark_dto.LarkMsgReq) (resp lark_dto.LarkMsgResp, err error) {
-	log.Logger.Debugf("[LarkService.SendLarkMsg] contacts[%v] start", req.Contacts)
-	resp.Resp, err = s.sendMsg(ctx, req.Contacts, req.Message)
-	if err != nil {
-		log.Logger.Errorf("[LarkService.SendLarkMsg] sendMsg error: %v", err)
-		return
-	}
-	log.Logger.Infof("[LarkService.SendLarkMsg] contacts[%v] success", req.Contacts)
-	return
-}
-
-func (s *LarkSrvImpl) sendMsg(ctx context.Context, contacts []string, msg string) ([]*larkim.CreateMessageResp, error) {
-	var (
-		err   error
-		resps = make([]*larkim.CreateMessageResp, 0)
-	)
-
-	for _, c := range contacts {
-		uuid := utils.UUID()
-		req := larkim.NewCreateMessageReqBuilder().
+func (s *LarkServiceImpl) SendMessage(ctx context.Context, req dto.LarkMessageRequest) (dto.LarkMessageResponse, error) {
+	responses := make([]*larkim.CreateMessageResp, 0, len(req.Contacts))
+	errs := make([]error, 0)
+	for _, contact := range req.Contacts {
+		request := larkim.NewCreateMessageReqBuilder().
 			ReceiveIdType("email").
 			Body(larkim.NewCreateMessageReqBodyBuilder().
-				ReceiveId(c).
-				Uuid(uuid).
+				ReceiveId(contact).
+				Uuid(utils.UUID()).
 				MsgType("interactive").
-				Content(msg).
+				Content(req.Message).
 				Build()).
 			Build()
 
-		resp, createErr := s.client.Im.Message.Create(ctx, req)
-		if createErr != nil {
-			log.Logger.Errorf("[LarkService.sendMsg] contact[%s] Create error: %v", c, createErr)
-			err = createErr
+		resp, err := s.client.Im.Message.Create(ctx, request)
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
-
 		if !resp.Success() {
-			err = errors.New(resp.ErrorResp())
+			errs = append(errs, errors.New(resp.ErrorResp()))
+			continue
 		}
-
-		resps = append(resps, resp)
+		responses = append(responses, resp)
 	}
-
-	return resps, err
+	return dto.LarkMessageResponse{Responses: responses}, errors.Join(errs...)
 }

@@ -1,20 +1,23 @@
 package http
 
 import (
-	"errors"
-	"fmt"
+	"crypto/subtle"
 	"net/http"
+	"regexp"
+	"time"
+	"uuid"
+
+	"fmt"
+	redisv9 "github.com/SisyphusSQ/go-starter/v2/internal/lib/redis"
 	"strings"
 
-	"github.com/SisyphusSQ/golib/models/vo/base_vo"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-
-	"go-starter/config"
-	"go-starter/internal/lib/log"
-	redisv9 "go-starter/internal/lib/redis"
-	"go-starter/utils"
-	"go-starter/vars"
+	"github.com/SisyphusSQ/go-starter/v2/config"
+	"github.com/SisyphusSQ/go-starter/v2/internal/lib/log"
+	"github.com/SisyphusSQ/go-starter/v2/internal/models/vo"
+	"github.com/SisyphusSQ/go-starter/v2/internal/requestinfo"
+	"github.com/SisyphusSQ/go-starter/v2/utils"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 type EchoMiddleware struct {
@@ -22,117 +25,105 @@ type EchoMiddleware struct {
 	cache  *redisv9.Client
 }
 
-func (e *EchoMiddleware) CORS(h echo.HandlerFunc) echo.HandlerFunc {
-	cors := middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{echo.DELETE, echo.GET, echo.POST, echo.PUT, echo.OPTIONS, echo.HEAD, echo.PATCH},
-	})
-	return cors(h)
-}
+var validRequestID = regexp.MustCompile(`^[A-Za-z0-9._-]{1,128}$`)
 
-func (e *EchoMiddleware) Recover(h echo.HandlerFunc) echo.HandlerFunc {
-	r := middleware.Recover()
-	return r(h)
+func InitMiddleware(cfg config.Config, cache *redisv9.Client) *EchoMiddleware {
+	return &EchoMiddleware{config: cfg, cache: cache}
 }
-
-func (e *EchoMiddleware) Logger(h echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		log.Logger.Info("Enter method: [%s], uri: [%s], userAgent: [%s]", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent())
-		return h(c)
+func (e *EchoMiddleware) CORS(next echo.HandlerFunc) echo.HandlerFunc {
+	return middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: e.config.Server.CORSOrigins, AllowHeaders: []string{"Content-Type", "Authorization", "access_key", "secret_key", "X-Request-ID"}, ExposeHeaders: []string{"X-Request-ID"}})(next)
+}
+func (e *EchoMiddleware) Recover(next echo.HandlerFunc) echo.HandlerFunc {
+	return middleware.Recover()(next)
+}
+func (e *EchoMiddleware) Logger(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		id := c.Request().Header.Get("X-Request-ID")
+		if !validRequestID.MatchString(id) {
+			id = uuid.New().String()
+		}
+		c.SetRequest(c.Request().WithContext(requestinfo.WithID(c.Request().Context(), id)))
+		c.Response().Header().Set("X-Request-ID", id)
+		start := time.Now()
+		err := next(c)
+		if err != nil {
+			e.ErrorHandler(c, err)
+		}
+		response, _ := echo.UnwrapResponse(c.Response())
+		status := http.StatusOK
+		if response != nil {
+			status = response.Status
+		}
+		log.FromContext(c.Request().Context()).Infow("request completed", "method", c.Request().Method, "route", c.Path(), "status", status, "duration", time.Since(start))
+		return nil
 	}
 }
-
-func (e *EchoMiddleware) JWT(hf echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		uri := c.Request().URL.Path
-		if e.isPublicURI(uri) {
-			return hf(c)
+func (e *EchoMiddleware) Auth(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		if e.isPublicURI(c.Request().URL.Path) {
+			return next(c)
 		}
-
-		token, err := e.extractBearerToken(c.Request().Header.Get("Authorization"))
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, base_vo.AssertErrResp("认证失败"))
-		}
-
-		claims, err := utils.ParseToken(token, e.config.Key.JWT.Secret)
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, base_vo.AssertErrResp("认证失败"))
-		}
-
-		if e.cache == nil {
-			return c.JSON(http.StatusUnauthorized, base_vo.AssertErrResp("认证失败"))
-		}
-
-		cacheKey := fmt.Sprintf("jwt:user:%d", claims.UserID)
-		cacheToken, err := e.cache.Get(c.Request().Context(), cacheKey).Result()
-		if err != nil {
-			if errors.Is(err, redisv9.Nil) {
-				return c.JSON(http.StatusUnauthorized, base_vo.AssertErrResp("认证失败"))
+		switch e.config.Key.Type {
+		case "none":
+			return next(c) // Config.Validate 限制为 loopback debug。
+		case "basic":
+			user, password, ok := c.Request().BasicAuth()
+			if ok && equal(user, e.config.Key.Basic.User) && equal(password, e.config.Key.Basic.Password) {
+				return next(c)
 			}
-			return c.JSON(http.StatusUnauthorized, base_vo.AssertErrResp("认证失败"))
-		}
-		if cacheToken != token {
-			return c.JSON(http.StatusUnauthorized, base_vo.AssertErrResp("认证失败"))
-		}
+		case "key":
+			if equal(c.Request().Header.Get("access_key"), e.config.Key.AK.AccessKey) && equal(c.Request().Header.Get("secret_key"), e.config.Key.AK.SecretKey) {
+				return next(c)
+			}
 
+		case "jwt":
+			return e.JWT(next)(c)
+
+		}
+		return utils.ErrUnauthorized
+	}
+}
+func equal(a, b string) bool { return b != "" && subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1 }
+func (e *EchoMiddleware) isPublicURI(path string) bool {
+	return path == "/health" || path == "/ready"
+}
+
+func (e *EchoMiddleware) JWT(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		kind, token, ok := strings.Cut(strings.TrimSpace(c.Request().Header.Get("Authorization")), " ")
+		if !ok || !strings.EqualFold(kind, "Bearer") || strings.TrimSpace(token) == "" {
+			return utils.ErrUnauthorized
+		}
+		token = strings.TrimSpace(token)
+		claims, err := utils.ParseToken(token, e.config.Key.JWT.Secret, e.config.Key.JWT.Issuer)
+		if err != nil || claims.UserID <= 0 || e.cache == nil {
+			return utils.ErrUnauthorized
+		}
+		stored, err := e.cache.Get(c.Request().Context(), fmt.Sprintf("%s:jwt:user:%d", e.config.Key.JWT.Namespace, claims.UserID)).Result()
+		if err != nil || !equal(stored, token) {
+			return utils.ErrUnauthorized
+		}
 		c.Set("user_id", claims.UserID)
 		c.Set("user_email", claims.Email)
-		return hf(c)
+		return next(c)
 	}
 }
 
-func (e *EchoMiddleware) AccessAuth(hf echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		uri := c.Request().RequestURI
-		if strings.Compare(uri, "/") == 0 || strings.Compare(uri, "/health") == 0 {
-			log.Logger.Debug("Directly enter to controller")
-			return hf(c)
-		}
-
-		accessKey := c.Request().Header.Get("access_key")
-		secretKey := c.Request().Header.Get("secret_key")
-		if accessKey != vars.AccessKey || secretKey != vars.SecretKey {
-			return c.JSON(http.StatusUnauthorized, base_vo.AssertErrResp("认证失败"))
-		}
-
-		return hf(c)
+func (e *EchoMiddleware) ErrorHandler(c *echo.Context, err error) {
+	response, _ := echo.UnwrapResponse(c.Response())
+	if response != nil && response.Committed {
+		return
 	}
-}
-
-func (e *EchoMiddleware) ErrorHandler(err error, c echo.Context) {
-	var report *echo.HTTPError
-	ok := errors.As(err, &report)
-	if !ok {
-		report = echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	status := utils.GetStatusCode(err)
+	if code := echo.StatusCode(err); code != 0 {
+		status = code
 	}
-	log.Logger.Info("Leave method: [%s], uri: [%s], userAgent: [%s], got err: %v", c.Request().Method, c.Request().RequestURI, c.Request().UserAgent(), report.Message)
-	c.Echo().DefaultHTTPErrorHandler(err, c)
-}
-
-func (e *EchoMiddleware) isPublicURI(uri string) bool {
-	return uri == "/" ||
-		uri == "/health" ||
-		uri == "/login" ||
-		strings.Contains(uri, "/swagger")
-}
-
-func (e *EchoMiddleware) extractBearerToken(authorization string) (string, error) {
-	auths := strings.SplitN(authorization, " ", 2)
-	if len(auths) != 2 {
-		return "", errors.New("invalid authorization header")
+	if status < 400 || status > 599 {
+		status = 500
 	}
-	if !strings.EqualFold(auths[0], "Bearer") {
-		return "", errors.New("invalid authorization type")
+	message := http.StatusText(status)
+	if status >= 500 {
+		log.FromContext(c.Request().Context()).Errorw("request failed", "status", status)
 	}
-	if strings.TrimSpace(auths[1]) == "" {
-		return "", errors.New("empty token")
-	}
-	return auths[1], nil
-}
-
-func InitMiddleware(config config.Config, cache *redisv9.Client) *EchoMiddleware {
-	return &EchoMiddleware{
-		config: config,
-		cache:  cache,
-	}
+	_ = c.JSON(status, vo.Response{Code: status, Message: message, RequestID: requestinfo.ID(c.Request().Context())})
 }

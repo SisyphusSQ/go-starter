@@ -1,7 +1,7 @@
 package vo
 
 import (
-	"go-starter/utils"
+	"github.com/SisyphusSQ/go-starter/v2/utils"
 )
 
 const MaxPageSize = 100

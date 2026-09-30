@@ -23,3 +23,33 @@
 *.log
 
 bin/*
+# Base
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*.log
+logs/
+tmp/
+temp/
+**/output/
+
+# Project-local runtime summaries and execution records
+.agents/state/*
+!.agents/state/TEMPLATE.md
+.agents/runs/*
+!.agents/runs/TEMPLATE.md
+
+# Cursor project rules are commit-safe; other Cursor files stay local by default.
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/*.mdc
+
+# Go
+bin/
+/build/
+*.test
+*.out
+coverage.out
+coverage.html

@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/google/uuid"
+import "uuid"
 
 func UUID() string {
 	return uuid.New().String()
