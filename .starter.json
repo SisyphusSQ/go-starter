@@ -1,7 +1,7 @@
 {
   "generator_version": "v2.0.0",
   "schema": 1,
-  "template_digest": "b6d08c04ca84e3dded17a26d090b2841c805c906540eda60f738b33b584d1d16",
+  "template_digest": "fd9e54a958e5dedc3f830ef2ac4d53184f973844bd2836c59a3c69048421aa5a",
   "harness_revision": "b20e5e8ece6a529c7d74aa0a8b1de77bd06c374c",
   "options": {
     "ModuleName": "github.com/SisyphusSQ/go-starter/v2",
@@ -29,7 +29,7 @@
     ".dockerignore": "29236131adf93b4f5ca995e24b77ddfaf82ad923e70cdf7669cde717f52d8356",
     ".github/dependabot.yml": "12f063357e138d83818b8664be407a2f206854219b12eace9fd3473a7b5dc073",
     ".github/workflows/ci.yml": "594b645b2401909a9e3ff361779a5d7e180a384155477df9955b42e425793410",
-    ".gitignore": "7f0286d0991bc7fab697542f2e734e18c2a9263cafed12ce2cda58500ffd7845",
+    ".gitignore": "72ef1236f0ca976ec398052e8d2d20a13180bd8ca3667efc298162f4ee585b9c",
     ".golangci.yml": "73bbd8d9701fd33c9f2369c13d63b03c4f5e602909bc91d4ff2eaeb1580a06f2",
     "AGENTS.md": "1e86421b9ef03a6d18dfe16631d3ce6ae4335f7653ab48ce62d8bf23523f82c3",
     "Dockerfile": "2ff10ca151d0c440fce976297a40068dffad0e0b863bf11609d1cd54977bc776",

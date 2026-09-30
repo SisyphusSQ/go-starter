@@ -48,7 +48,7 @@ temp/
 
 # Go
 bin/
-build/
+/build/
 *.test
 *.out
 coverage.out
