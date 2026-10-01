@@ -16,14 +16,14 @@ import (
 
 	"github.com/SisyphusSQ/go-starter/v2/config"
 	"github.com/SisyphusSQ/go-starter/v2/internal/lib/log"
-	"github.com/SisyphusSQ/go-starter/v2/internal/models/dto"
+	"github.com/SisyphusSQ/go-starter/v2/internal/models/dto/lark_dto"
 	"github.com/SisyphusSQ/go-starter/v2/utils"
 )
 
 type LarkService interface {
 	SetBotURL(botURL string)
-	SendBotMessage(ctx context.Context, title string, content []dto.LarkContent) error
-	SendMessage(ctx context.Context, req dto.LarkMessageRequest) (dto.LarkMessageResponse, error)
+	SendBotMessage(ctx context.Context, title string, content []lark_dto.LarkContent) error
+	SendMessage(ctx context.Context, req lark_dto.LarkMessageRequest) (lark_dto.LarkMessageResponse, error)
 }
 
 type LarkServiceImpl struct {
@@ -49,12 +49,12 @@ func (s *LarkServiceImpl) SetBotURL(botURL string) {
 	s.botURL = strings.TrimSpace(botURL)
 }
 
-func (s *LarkServiceImpl) SendBotMessage(ctx context.Context, title string, content []dto.LarkContent) error {
+func (s *LarkServiceImpl) SendBotMessage(ctx context.Context, title string, content []lark_dto.LarkContent) error {
 	if s.botURL == "" {
 		return errors.New("lark bot URL is not configured")
 	}
 
-	reqBody, err := json.Marshal(dto.NewBotMessage(title, content))
+	reqBody, err := json.Marshal(lark_dto.NewBotMessage(title, content))
 	if err != nil {
 		return fmt.Errorf("marshal lark bot message: %w", err)
 	}
@@ -77,7 +77,7 @@ func (s *LarkServiceImpl) SendBotMessage(ctx context.Context, title string, cont
 		return fmt.Errorf("lark bot returned HTTP %d", resp.StatusCode)
 	}
 
-	var result dto.BotMessageResponse
+	var result lark_dto.BotMessageResponse
 	if err = json.Unmarshal(body, &result); err != nil {
 		return fmt.Errorf("decode lark bot response: %w", err)
 	}
@@ -87,7 +87,7 @@ func (s *LarkServiceImpl) SendBotMessage(ctx context.Context, title string, cont
 	return nil
 }
 
-func (s *LarkServiceImpl) SendMessage(ctx context.Context, req dto.LarkMessageRequest) (dto.LarkMessageResponse, error) {
+func (s *LarkServiceImpl) SendMessage(ctx context.Context, req lark_dto.LarkMessageRequest) (lark_dto.LarkMessageResponse, error) {
 	responses := make([]*larkim.CreateMessageResp, 0, len(req.Contacts))
 	errs := make([]error, 0)
 	for _, contact := range req.Contacts {
@@ -112,5 +112,5 @@ func (s *LarkServiceImpl) SendMessage(ctx context.Context, req dto.LarkMessageRe
 		}
 		responses = append(responses, resp)
 	}
-	return dto.LarkMessageResponse{Responses: responses}, errors.Join(errs...)
+	return lark_dto.LarkMessageResponse{Responses: responses}, errors.Join(errs...)
 }

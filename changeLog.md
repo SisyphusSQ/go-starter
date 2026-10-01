@@ -1,5 +1,18 @@
 ## Unreleased
 
+## v2.0.1(20261001)
+
+#### optimization:
+
+1. 同步 v2.0.1 模板的业务子包规范、各层 Agent 入口和新增模块步骤；明确单文件业务也必须按域分包。
+2. 明确 MySQL DO 业务子包内一个表一个文件，DO、TableName() 与列映射同文件。
+3. Lark DTO 移至 internal/models/dto/lark_dto，公共服务同步使用新 import；更新模板来源和受管理文件摘要。
+
+#### note:
+
+1. 已有工程使用 Lark DTO 时需更新 import；具体业务 VO 放 <domain>_vo，统一响应、绑定及通用校验保留在 VO 根包。
+2. 本轮开发验证及未覆盖范围见 [业务子包验证记录](docs/test/2026-10-01-business-packages.md)；本版本无 SQL 变更。
+
 ## v2.0.0(20260930)
 
 #### feature:
