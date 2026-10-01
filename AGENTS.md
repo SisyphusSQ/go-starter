@@ -16,11 +16,14 @@
 ## 开发前必读
 
 1. docs/design/architecture/README.md：分层与 Fx 生命周期。
-2. docs/design/architecture/models.md：DO / DTO / VO 和转换责任。
-3. docs/design/details/development/code-style.md：命名、类型、错误、日志、context、测试。
-4. docs/design/details/development/add-module.md：新增业务步骤；受影响主题的 details 文档。
+2. docs/design/architecture/packages.md：业务子包、根包装配与 MySQL DO 一表一文件。
+3. docs/design/architecture/models.md：DO / DTO / VO 和转换责任。
+4. docs/design/details/development/code-style.md：命名、类型、错误、日志、context、测试。
+5. docs/design/details/development/add-module.md：新增业务步骤；受影响主题的 details 文档。
 
 无 examples 时同样保留 internal/models/do、dto、vo 及 README。DO 不作为 HTTP 响应；DTO 放跨层与外部系统数据；VO 沿用本仓 HTTP 请求/响应约定。service 中不能新建应归入 models 的业务结构体或用匿名 struct 绕过规则。
+
+controller、service、repository 和业务 DO/DTO/VO 必须按业务域建立子包，单文件业务也不能平铺到层根包。根包只承担装配及规范允许的公共能力；MySQL DO 在业务子包内一个表一个文件，DO 与 TableName() 同文件。完整规则以 docs/design/architecture/packages.md 为准。
 
 build-all / release-all 覆盖 windows、darwin、linux × amd64、arm64，产物放 bin/<os>-<arch>/。构建细节见 docs/design/details/build/README.md。
 

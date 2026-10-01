@@ -3,7 +3,7 @@ package vars
 // Version info
 var (
 	AppName    = "go-starter"
-	AppVersion = "v2.0.0"
+	AppVersion = "v2.0.1"
 	GoVersion  = "default"
 	BuildTime  = "default"
 	GitCommit  = "default"

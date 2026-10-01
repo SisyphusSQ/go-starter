@@ -1,4 +1,4 @@
-package dto
+package lark_dto
 
 import larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 

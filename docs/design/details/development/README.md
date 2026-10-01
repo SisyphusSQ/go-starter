@@ -18,4 +18,4 @@
 
 提交与发布收尾复用开发阶段已有证据，遵守用户不重复测试的约定。缺少工具或服务时准确记录 Not Run/Blocked。
 
-新增代码必读 [模型规范](../../architecture/models.md)、[代码规范](code-style.md) 和 [模块开发步骤](add-module.md)。
+新增代码必读 [业务子包约定](../../architecture/packages.md)、[模型规范](../../architecture/models.md)、[代码规范](code-style.md) 和 [模块开发步骤](add-module.md)。

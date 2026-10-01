@@ -12,7 +12,7 @@
 | models/vo | 对外响应及既有请求校验模型 |
 | lib | 按生命周期管理的基础组件 |
 
-新增业务按模型、repository、service、controller 顺序实现，并在相应 module.go 注册 Provide/Invoke。遵循现有边界，不为每个函数建立无调用需求的抽象。
+新增业务先确定业务域及各层子包，再按模型、repository、service、controller 顺序实现，并在相应 module.go 注册 Provide/Invoke。即使只有一个文件，业务代码也必须进入子包；各层根包仅保留装配及明确的公共能力。目录、依赖和 MySQL DO 一表一文件规则见 [业务子包约定](packages.md)，模型语义见 [模型约定](models.md)。
 
 SQL repository 必须使用 `engine.DB(ctx)`；`engine.Transaction(ctx, callback)` 内传给 callback 的 context 携带同一事务。回调返回错误或被取消即回滚。嵌套和跨数据库事务不支持。
 
